@@ -1,0 +1,854 @@
+{
+  "gaussian": {
+    "title": "Gaussian Noise",
+    "axis": "Noise Variance (\u03c3)",
+    "steps": [
+      {
+        "level": 1,
+        "label": "L1 (\u03c3 = 0.0)",
+        "raw_param": 0.0,
+        "snr": "SNR 14.2 dB",
+        "methods": {
+          "global": {
+            "iou": 0.996,
+            "threshold": 127.0,
+            "time_ms": 0.04,
+            "mask_img_path": "assets/stress_test/gaussian_l1_global.png"
+          },
+          "otsu": {
+            "iou": 0.9957,
+            "threshold": 126.0,
+            "time_ms": 0.13,
+            "mask_img_path": "assets/stress_test/gaussian_l1_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.388,
+            "threshold": null,
+            "time_ms": 1.05,
+            "mask_img_path": "assets/stress_test/gaussian_l1_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.9725,
+            "threshold": null,
+            "time_ms": 0.5,
+            "mask_img_path": "assets/stress_test/gaussian_l1_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/gaussian_l1_deg.png"
+      },
+      {
+        "level": 2,
+        "label": "L2 (\u03c3 = 15.1)",
+        "raw_param": 228.57,
+        "snr": "SNR 13.4 dB",
+        "methods": {
+          "global": {
+            "iou": 0.9807,
+            "threshold": 127.0,
+            "time_ms": 0.03,
+            "mask_img_path": "assets/stress_test/gaussian_l2_global.png"
+          },
+          "otsu": {
+            "iou": 0.9801,
+            "threshold": 125.0,
+            "time_ms": 0.19,
+            "mask_img_path": "assets/stress_test/gaussian_l2_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.1117,
+            "threshold": null,
+            "time_ms": 0.79,
+            "mask_img_path": "assets/stress_test/gaussian_l2_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0853,
+            "threshold": null,
+            "time_ms": 1.36,
+            "mask_img_path": "assets/stress_test/gaussian_l2_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/gaussian_l2_deg.png"
+      },
+      {
+        "level": 3,
+        "label": "L3 (\u03c3 = 21.4)",
+        "raw_param": 457.14,
+        "snr": "SNR 12.7 dB",
+        "methods": {
+          "global": {
+            "iou": 0.9425,
+            "threshold": 127.0,
+            "time_ms": 0.02,
+            "mask_img_path": "assets/stress_test/gaussian_l3_global.png"
+          },
+          "otsu": {
+            "iou": 0.9457,
+            "threshold": 126.0,
+            "time_ms": 0.08,
+            "mask_img_path": "assets/stress_test/gaussian_l3_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.1028,
+            "threshold": null,
+            "time_ms": 0.68,
+            "mask_img_path": "assets/stress_test/gaussian_l3_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0853,
+            "threshold": null,
+            "time_ms": 1.15,
+            "mask_img_path": "assets/stress_test/gaussian_l3_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/gaussian_l3_deg.png"
+      },
+      {
+        "level": 4,
+        "label": "L4 (\u03c3 = 26.2)",
+        "raw_param": 685.71,
+        "snr": "SNR 12.2 dB",
+        "methods": {
+          "global": {
+            "iou": 0.855,
+            "threshold": 127.0,
+            "time_ms": 0.02,
+            "mask_img_path": "assets/stress_test/gaussian_l4_global.png"
+          },
+          "otsu": {
+            "iou": 0.8379,
+            "threshold": 129.0,
+            "time_ms": 0.08,
+            "mask_img_path": "assets/stress_test/gaussian_l4_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.0989,
+            "threshold": null,
+            "time_ms": 0.69,
+            "mask_img_path": "assets/stress_test/gaussian_l4_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0853,
+            "threshold": null,
+            "time_ms": 1.23,
+            "mask_img_path": "assets/stress_test/gaussian_l4_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/gaussian_l4_deg.png"
+      },
+      {
+        "level": 5,
+        "label": "L5 (\u03c3 = 30.2)",
+        "raw_param": 914.29,
+        "snr": "SNR 11.7 dB",
+        "methods": {
+          "global": {
+            "iou": 0.7525,
+            "threshold": 127.0,
+            "time_ms": 0.02,
+            "mask_img_path": "assets/stress_test/gaussian_l5_global.png"
+          },
+          "otsu": {
+            "iou": 0.5967,
+            "threshold": 139.0,
+            "time_ms": 0.08,
+            "mask_img_path": "assets/stress_test/gaussian_l5_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.0972,
+            "threshold": null,
+            "time_ms": 0.67,
+            "mask_img_path": "assets/stress_test/gaussian_l5_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0853,
+            "threshold": null,
+            "time_ms": 1.6,
+            "mask_img_path": "assets/stress_test/gaussian_l5_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/gaussian_l5_deg.png"
+      },
+      {
+        "level": 6,
+        "label": "L6 (\u03c3 = 33.8)",
+        "raw_param": 1142.86,
+        "snr": "SNR 11.3 dB",
+        "methods": {
+          "global": {
+            "iou": 0.6635,
+            "threshold": 127.0,
+            "time_ms": 0.02,
+            "mask_img_path": "assets/stress_test/gaussian_l6_global.png"
+          },
+          "otsu": {
+            "iou": 0.392,
+            "threshold": 150.0,
+            "time_ms": 0.08,
+            "mask_img_path": "assets/stress_test/gaussian_l6_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.096,
+            "threshold": null,
+            "time_ms": 0.7,
+            "mask_img_path": "assets/stress_test/gaussian_l6_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0853,
+            "threshold": null,
+            "time_ms": 1.07,
+            "mask_img_path": "assets/stress_test/gaussian_l6_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/gaussian_l6_deg.png"
+      },
+      {
+        "level": 7,
+        "label": "L7 (\u03c3 = 37.0)",
+        "raw_param": 1371.43,
+        "snr": "SNR 11.0 dB",
+        "methods": {
+          "global": {
+            "iou": 0.5882,
+            "threshold": 127.0,
+            "time_ms": 0.03,
+            "mask_img_path": "assets/stress_test/gaussian_l7_global.png"
+          },
+          "otsu": {
+            "iou": 0.3075,
+            "threshold": 156.0,
+            "time_ms": 0.08,
+            "mask_img_path": "assets/stress_test/gaussian_l7_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.0954,
+            "threshold": null,
+            "time_ms": 0.68,
+            "mask_img_path": "assets/stress_test/gaussian_l7_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0853,
+            "threshold": null,
+            "time_ms": 1.06,
+            "mask_img_path": "assets/stress_test/gaussian_l7_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/gaussian_l7_deg.png"
+      },
+      {
+        "level": 8,
+        "label": "L8 (\u03c3 = 40.0)",
+        "raw_param": 1600.0,
+        "snr": "SNR 10.7 dB",
+        "methods": {
+          "global": {
+            "iou": 0.5294,
+            "threshold": 127.0,
+            "time_ms": 0.01,
+            "mask_img_path": "assets/stress_test/gaussian_l8_global.png"
+          },
+          "otsu": {
+            "iou": 0.2697,
+            "threshold": 159.0,
+            "time_ms": 0.08,
+            "mask_img_path": "assets/stress_test/gaussian_l8_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.095,
+            "threshold": null,
+            "time_ms": 0.71,
+            "mask_img_path": "assets/stress_test/gaussian_l8_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0853,
+            "threshold": null,
+            "time_ms": 1.39,
+            "mask_img_path": "assets/stress_test/gaussian_l8_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/gaussian_l8_deg.png"
+      }
+    ],
+    "stats": {
+      "auc": {
+        "global": 0.792,
+        "otsu": 0.67,
+        "adaptive": 0.121,
+        "edge": 0.149
+      },
+      "resilience": {
+        "global": 53.2,
+        "otsu": 27.1,
+        "adaptive": 24.5,
+        "edge": 8.8
+      }
+    }
+  },
+  "low_light": {
+    "title": "Low Light (Gamma)",
+    "axis": "Gamma Factor (\u03b3)",
+    "steps": [
+      {
+        "level": 1,
+        "label": "L1 (\u03b3 = 1.00)",
+        "raw_param": 1.0,
+        "snr": "SNR 14.2 dB",
+        "methods": {
+          "global": {
+            "iou": 0.996,
+            "threshold": 127.0,
+            "time_ms": 0.01,
+            "mask_img_path": "assets/stress_test/low_light_l1_global.png"
+          },
+          "otsu": {
+            "iou": 0.9957,
+            "threshold": 126.0,
+            "time_ms": 0.11,
+            "mask_img_path": "assets/stress_test/low_light_l1_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.388,
+            "threshold": null,
+            "time_ms": 0.71,
+            "mask_img_path": "assets/stress_test/low_light_l1_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.9725,
+            "threshold": null,
+            "time_ms": 0.4,
+            "mask_img_path": "assets/stress_test/low_light_l1_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/low_light_l1_deg.png"
+      },
+      {
+        "level": 2,
+        "label": "L2 (\u03b3 = 1.50)",
+        "raw_param": 1.5,
+        "snr": "SNR 12.4 dB",
+        "methods": {
+          "global": {
+            "iou": 0.9494,
+            "threshold": 127.0,
+            "time_ms": 0.01,
+            "mask_img_path": "assets/stress_test/low_light_l2_global.png"
+          },
+          "otsu": {
+            "iou": 0.9914,
+            "threshold": 97.0,
+            "time_ms": 0.12,
+            "mask_img_path": "assets/stress_test/low_light_l2_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.382,
+            "threshold": null,
+            "time_ms": 0.69,
+            "mask_img_path": "assets/stress_test/low_light_l2_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.958,
+            "threshold": null,
+            "time_ms": 0.39,
+            "mask_img_path": "assets/stress_test/low_light_l2_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/low_light_l2_deg.png"
+      },
+      {
+        "level": 3,
+        "label": "L3 (\u03b3 = 2.00)",
+        "raw_param": 2.0,
+        "snr": "SNR 11.5 dB",
+        "methods": {
+          "global": {
+            "iou": 0.8971,
+            "threshold": 127.0,
+            "time_ms": 0.01,
+            "mask_img_path": "assets/stress_test/low_light_l3_global.png"
+          },
+          "otsu": {
+            "iou": 0.9809,
+            "threshold": 78.0,
+            "time_ms": 0.12,
+            "mask_img_path": "assets/stress_test/low_light_l3_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.3651,
+            "threshold": null,
+            "time_ms": 0.71,
+            "mask_img_path": "assets/stress_test/low_light_l3_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.9466,
+            "threshold": null,
+            "time_ms": 0.47,
+            "mask_img_path": "assets/stress_test/low_light_l3_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/low_light_l3_deg.png"
+      },
+      {
+        "level": 4,
+        "label": "L4 (\u03b3 = 2.50)",
+        "raw_param": 2.5,
+        "snr": "SNR 11.0 dB",
+        "methods": {
+          "global": {
+            "iou": 0.0853,
+            "threshold": 127.0,
+            "time_ms": 0.02,
+            "mask_img_path": "assets/stress_test/low_light_l4_global.png"
+          },
+          "otsu": {
+            "iou": 0.969,
+            "threshold": 64.0,
+            "time_ms": 0.13,
+            "mask_img_path": "assets/stress_test/low_light_l4_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.3427,
+            "threshold": null,
+            "time_ms": 0.67,
+            "mask_img_path": "assets/stress_test/low_light_l4_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.9384,
+            "threshold": null,
+            "time_ms": 0.41,
+            "mask_img_path": "assets/stress_test/low_light_l4_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/low_light_l4_deg.png"
+      },
+      {
+        "level": 5,
+        "label": "L5 (\u03b3 = 3.00)",
+        "raw_param": 3.0,
+        "snr": "SNR 10.7 dB",
+        "methods": {
+          "global": {
+            "iou": 0.0853,
+            "threshold": 127.0,
+            "time_ms": 0.02,
+            "mask_img_path": "assets/stress_test/low_light_l5_global.png"
+          },
+          "otsu": {
+            "iou": 0.96,
+            "threshold": 54.0,
+            "time_ms": 0.12,
+            "mask_img_path": "assets/stress_test/low_light_l5_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.3206,
+            "threshold": null,
+            "time_ms": 0.72,
+            "mask_img_path": "assets/stress_test/low_light_l5_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.934,
+            "threshold": null,
+            "time_ms": 0.41,
+            "mask_img_path": "assets/stress_test/low_light_l5_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/low_light_l5_deg.png"
+      },
+      {
+        "level": 6,
+        "label": "L6 (\u03b3 = 3.50)",
+        "raw_param": 3.5,
+        "snr": "SNR 10.5 dB",
+        "methods": {
+          "global": {
+            "iou": 0.0853,
+            "threshold": 127.0,
+            "time_ms": 0.02,
+            "mask_img_path": "assets/stress_test/low_light_l6_global.png"
+          },
+          "otsu": {
+            "iou": 0.9551,
+            "threshold": 45.0,
+            "time_ms": 0.13,
+            "mask_img_path": "assets/stress_test/low_light_l6_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.3022,
+            "threshold": null,
+            "time_ms": 0.71,
+            "mask_img_path": "assets/stress_test/low_light_l6_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.9306,
+            "threshold": null,
+            "time_ms": 0.4,
+            "mask_img_path": "assets/stress_test/low_light_l6_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/low_light_l6_deg.png"
+      },
+      {
+        "level": 7,
+        "label": "L7 (\u03b3 = 4.00)",
+        "raw_param": 4.0,
+        "snr": "SNR 10.4 dB",
+        "methods": {
+          "global": {
+            "iou": 0.0853,
+            "threshold": 127.0,
+            "time_ms": 0.01,
+            "mask_img_path": "assets/stress_test/low_light_l7_global.png"
+          },
+          "otsu": {
+            "iou": 0.9525,
+            "threshold": 38.0,
+            "time_ms": 0.12,
+            "mask_img_path": "assets/stress_test/low_light_l7_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.2848,
+            "threshold": null,
+            "time_ms": 0.71,
+            "mask_img_path": "assets/stress_test/low_light_l7_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.925,
+            "threshold": null,
+            "time_ms": 0.4,
+            "mask_img_path": "assets/stress_test/low_light_l7_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/low_light_l7_deg.png"
+      },
+      {
+        "level": 8,
+        "label": "L8 (\u03b3 = 4.50)",
+        "raw_param": 4.5,
+        "snr": "SNR 10.2 dB",
+        "methods": {
+          "global": {
+            "iou": 0.0853,
+            "threshold": 127.0,
+            "time_ms": 0.01,
+            "mask_img_path": "assets/stress_test/low_light_l8_global.png"
+          },
+          "otsu": {
+            "iou": 0.9445,
+            "threshold": 33.0,
+            "time_ms": 0.12,
+            "mask_img_path": "assets/stress_test/low_light_l8_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.2649,
+            "threshold": null,
+            "time_ms": 0.68,
+            "mask_img_path": "assets/stress_test/low_light_l8_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.917,
+            "threshold": null,
+            "time_ms": 0.43,
+            "mask_img_path": "assets/stress_test/low_light_l8_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/low_light_l8_deg.png"
+      }
+    ],
+    "stats": {
+      "auc": {
+        "global": 0.39,
+        "otsu": 0.968,
+        "adaptive": 0.332,
+        "edge": 0.94
+      },
+      "resilience": {
+        "global": 8.6,
+        "otsu": 94.9,
+        "adaptive": 68.3,
+        "edge": 94.3
+      }
+    }
+  },
+  "motion_blur": {
+    "title": "Motion Blur",
+    "axis": "Kernel Length (px)",
+    "steps": [
+      {
+        "level": 1,
+        "label": "L1 (1 px)",
+        "raw_param": 1.0,
+        "snr": "SNR 14.2 dB",
+        "methods": {
+          "global": {
+            "iou": 0.996,
+            "threshold": 127.0,
+            "time_ms": 0.01,
+            "mask_img_path": "assets/stress_test/motion_blur_l1_global.png"
+          },
+          "otsu": {
+            "iou": 0.9957,
+            "threshold": 126.0,
+            "time_ms": 0.13,
+            "mask_img_path": "assets/stress_test/motion_blur_l1_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.388,
+            "threshold": null,
+            "time_ms": 0.67,
+            "mask_img_path": "assets/stress_test/motion_blur_l1_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.9725,
+            "threshold": null,
+            "time_ms": 0.43,
+            "mask_img_path": "assets/stress_test/motion_blur_l1_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/motion_blur_l1_deg.png"
+      },
+      {
+        "level": 2,
+        "label": "L2 (5 px)",
+        "raw_param": 5.0,
+        "snr": "SNR 14.2 dB",
+        "methods": {
+          "global": {
+            "iou": 0.9918,
+            "threshold": 127.0,
+            "time_ms": 0.02,
+            "mask_img_path": "assets/stress_test/motion_blur_l2_global.png"
+          },
+          "otsu": {
+            "iou": 0.9924,
+            "threshold": 126.0,
+            "time_ms": 0.12,
+            "mask_img_path": "assets/stress_test/motion_blur_l2_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.394,
+            "threshold": null,
+            "time_ms": 0.74,
+            "mask_img_path": "assets/stress_test/motion_blur_l2_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.9727,
+            "threshold": null,
+            "time_ms": 0.41,
+            "mask_img_path": "assets/stress_test/motion_blur_l2_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/motion_blur_l2_deg.png"
+      },
+      {
+        "level": 3,
+        "label": "L3 (9 px)",
+        "raw_param": 9.0,
+        "snr": "SNR 14.3 dB",
+        "methods": {
+          "global": {
+            "iou": 0.9858,
+            "threshold": 127.0,
+            "time_ms": 0.01,
+            "mask_img_path": "assets/stress_test/motion_blur_l3_global.png"
+          },
+          "otsu": {
+            "iou": 0.9858,
+            "threshold": 127.0,
+            "time_ms": 0.12,
+            "mask_img_path": "assets/stress_test/motion_blur_l3_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.4046,
+            "threshold": null,
+            "time_ms": 0.75,
+            "mask_img_path": "assets/stress_test/motion_blur_l3_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0305,
+            "threshold": null,
+            "time_ms": 0.46,
+            "mask_img_path": "assets/stress_test/motion_blur_l3_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/motion_blur_l3_deg.png"
+      },
+      {
+        "level": 4,
+        "label": "L4 (15 px)",
+        "raw_param": 15.0,
+        "snr": "SNR 14.5 dB",
+        "methods": {
+          "global": {
+            "iou": 0.9762,
+            "threshold": 127.0,
+            "time_ms": 0.02,
+            "mask_img_path": "assets/stress_test/motion_blur_l4_global.png"
+          },
+          "otsu": {
+            "iou": 0.974,
+            "threshold": 129.0,
+            "time_ms": 0.13,
+            "mask_img_path": "assets/stress_test/motion_blur_l4_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.3955,
+            "threshold": null,
+            "time_ms": 0.67,
+            "mask_img_path": "assets/stress_test/motion_blur_l4_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0103,
+            "threshold": null,
+            "time_ms": 0.46,
+            "mask_img_path": "assets/stress_test/motion_blur_l4_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/motion_blur_l4_deg.png"
+      },
+      {
+        "level": 5,
+        "label": "L5 (21 px)",
+        "raw_param": 21.0,
+        "snr": "SNR 14.7 dB",
+        "methods": {
+          "global": {
+            "iou": 0.9652,
+            "threshold": 127.0,
+            "time_ms": 0.02,
+            "mask_img_path": "assets/stress_test/motion_blur_l5_global.png"
+          },
+          "otsu": {
+            "iou": 0.9614,
+            "threshold": 130.0,
+            "time_ms": 0.13,
+            "mask_img_path": "assets/stress_test/motion_blur_l5_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.3494,
+            "threshold": null,
+            "time_ms": 0.7,
+            "mask_img_path": "assets/stress_test/motion_blur_l5_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0095,
+            "threshold": null,
+            "time_ms": 0.47,
+            "mask_img_path": "assets/stress_test/motion_blur_l5_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/motion_blur_l5_deg.png"
+      },
+      {
+        "level": 6,
+        "label": "L6 (27 px)",
+        "raw_param": 27.0,
+        "snr": "SNR 14.8 dB",
+        "methods": {
+          "global": {
+            "iou": 0.9539,
+            "threshold": 127.0,
+            "time_ms": 0.01,
+            "mask_img_path": "assets/stress_test/motion_blur_l6_global.png"
+          },
+          "otsu": {
+            "iou": 0.9433,
+            "threshold": 132.0,
+            "time_ms": 0.13,
+            "mask_img_path": "assets/stress_test/motion_blur_l6_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.2957,
+            "threshold": null,
+            "time_ms": 0.69,
+            "mask_img_path": "assets/stress_test/motion_blur_l6_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0096,
+            "threshold": null,
+            "time_ms": 0.44,
+            "mask_img_path": "assets/stress_test/motion_blur_l6_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/motion_blur_l6_deg.png"
+      },
+      {
+        "level": 7,
+        "label": "L7 (33 px)",
+        "raw_param": 33.0,
+        "snr": "SNR 15.0 dB",
+        "methods": {
+          "global": {
+            "iou": 0.9422,
+            "threshold": 127.0,
+            "time_ms": 0.01,
+            "mask_img_path": "assets/stress_test/motion_blur_l7_global.png"
+          },
+          "otsu": {
+            "iou": 0.919,
+            "threshold": 134.0,
+            "time_ms": 0.13,
+            "mask_img_path": "assets/stress_test/motion_blur_l7_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.2423,
+            "threshold": null,
+            "time_ms": 0.69,
+            "mask_img_path": "assets/stress_test/motion_blur_l7_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0105,
+            "threshold": null,
+            "time_ms": 0.43,
+            "mask_img_path": "assets/stress_test/motion_blur_l7_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/motion_blur_l7_deg.png"
+      },
+      {
+        "level": 8,
+        "label": "L8 (41 px)",
+        "raw_param": 41.0,
+        "snr": "SNR 15.3 dB",
+        "methods": {
+          "global": {
+            "iou": 0.924,
+            "threshold": 127.0,
+            "time_ms": 0.02,
+            "mask_img_path": "assets/stress_test/motion_blur_l8_global.png"
+          },
+          "otsu": {
+            "iou": 0.8807,
+            "threshold": 137.0,
+            "time_ms": 0.13,
+            "mask_img_path": "assets/stress_test/motion_blur_l8_otsu.png"
+          },
+          "adaptive": {
+            "iou": 0.1854,
+            "threshold": null,
+            "time_ms": 0.68,
+            "mask_img_path": "assets/stress_test/motion_blur_l8_adaptive.png"
+          },
+          "edge": {
+            "iou": 0.0109,
+            "threshold": null,
+            "time_ms": 0.4,
+            "mask_img_path": "assets/stress_test/motion_blur_l8_edge.png"
+          }
+        },
+        "deg_img_path": "assets/stress_test/motion_blur_l8_deg.png"
+      }
+    ],
+    "stats": {
+      "auc": {
+        "global": 0.968,
+        "otsu": 0.959,
+        "adaptive": 0.338,
+        "edge": 0.219
+      },
+      "resilience": {
+        "global": 92.8,
+        "otsu": 88.5,
+        "adaptive": 47.8,
+        "edge": 1.1
+      }
+    }
+  }
+}

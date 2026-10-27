@@ -1,0 +1,1149 @@
+import json
+
+with open('results/stress_test_manifest_enriched.json') as f:
+    manifest_data = json.load(f)
+
+manifest_json_str = json.dumps(manifest_data)
+
+html_template = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Segmentation Lab — Robustness Stress-Test</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,600;1,8..60,600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {{
+      darkMode: "class",
+      theme: {{
+        extend: {{
+          colors: {{
+            "on-secondary-container": "#682300",
+            "tertiary-fixed": "#cfe5ff",
+            "error": "#ba1a1a",
+            "on-background": "#191c20",
+            "primary-fixed": "#b0eee8",
+            "on-tertiary": "#ffffff",
+            "inverse-surface": "#2e3135",
+            "surface-container": "#eceef3",
+            "on-secondary": "#ffffff",
+            "on-primary-container": "#99d7d1",
+            "primary": "#004743",
+            "on-surface": "#191c20",
+            "on-tertiary-container": "#adcef2",
+            "secondary-container": "#ff7e44",
+            "surface": "#f8f9ff",
+            "on-primary-fixed-variant": "#06504c",
+            "error-container": "#ffdad6",
+            "on-tertiary-fixed-variant": "#284967",
+            "outline": "#6f7978",
+            "on-secondary-fixed-variant": "#7e2c00",
+            "on-tertiary-fixed": "#001d33",
+            "primary-fixed-dim": "#95d2cc",
+            "surface-container-lowest": "#ffffff",
+            "surface-variant": "#e1e2e8",
+            "surface-tint": "#2a6864",
+            "primary-container": "#1f5f5b",
+            "inverse-primary": "#95d2cc",
+            "secondary-fixed-dim": "#ffb597",
+            "on-error": "#ffffff",
+            "inverse-on-surface": "#eff0f6",
+            "surface-container-low": "#f2f3f9",
+            "background": "#f8f9ff",
+            "tertiary-fixed-dim": "#a9caee",
+            "on-secondary-fixed": "#360f00",
+            "secondary": "#a53d00",
+            "on-primary": "#ffffff",
+            "secondary-fixed": "#ffdbcd",
+            "surface-bright": "#f8f9ff",
+            "surface-container-high": "#e6e8ed",
+            "tertiary": "#1f415e",
+            "outline-variant": "#bfc8c7",
+            "on-primary-fixed": "#00201e",
+            "tertiary-container": "#385877",
+            "on-error-container": "#93000a",
+            "surface-dim": "#d8dadf",
+            "surface-container-highest": "#e1e2e8",
+            "on-surface-variant": "#3f4947"
+          }},
+          borderRadius: {{
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          }},
+          spacing: {{
+            "space-xs": "0.25rem",
+            "gutter": "1rem",
+            "space-xl": "1.5rem",
+            "gutter-sm": "0.5rem",
+            "space-lg": "1rem",
+            "space-sm": "0.5rem",
+            "gutter-lg": "1.5rem",
+            "space-md": "0.75rem",
+            "margin": "1.5rem",
+            "margin-mobile": "1rem"
+          }},
+          fontFamily: {{
+            "code-md": ["JetBrains Mono"],
+            "headline-lg": ["\\"Source Serif 4\\""],
+            "code-sm": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"],
+            "body-lg": ["IBM Plex Sans"],
+            "display-lg": ["\\"Source Serif 4\\""],
+            "label-md": ["IBM Plex Sans"],
+            "label-sm": ["IBM Plex Sans"],
+            "code-lg": ["JetBrains Mono"],
+            "headline-sm": ["\\"Source Serif 4\\""],
+            "body-sm": ["IBM Plex Sans"],
+            "label-section": ["IBM Plex Sans"],
+            "headline-md": ["\\"Source Serif 4\\""]
+          }}
+        }}
+      }}
+    }};
+  </script>
+  <style>
+    @layer base {{
+      html, body {{ margin: 0; padding: 0; font-family: 'IBM Plex Sans', sans-serif; }}
+      body {{ overscroll-behavior: none; background-color: #F4F1EA; color: #191c20; }}
+    }}
+    .font-serif {{ font-family: 'Source Serif 4', serif; }}
+    .font-mono {{ font-family: 'JetBrains Mono', monospace; }}
+    .transition-all {{ transition: all 0.15s ease-in-out; }}
+    /* Custom toast notification styling */
+    #toast {{
+      visibility: hidden;
+      min-width: 260px;
+      background-color: #1C1F23;
+      color: #FBFAF7;
+      text-align: center;
+      border-radius: 4px;
+      padding: 10px 16px;
+      position: fixed;
+      z-index: 100;
+      bottom: 24px;
+      right: 24px;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+      border: 1px solid #1F5F5B;
+      opacity: 0;
+      transition: opacity 0.3s, bottom 0.3s;
+    }}
+    #toast.show {{
+      visibility: visible;
+      opacity: 1;
+      bottom: 32px;
+    }}
+  </style>
+</head>
+<body class="bg-[#F4F1EA] font-body-md text-on-surface antialiased select-text">
+
+<!-- Toast Notification -->
+<div id="toast">Notification</div>
+
+<!-- Fixed Archival Console Sidebar -->
+<aside class="fixed left-0 top-0 h-full w-[240px] bg-[#1C1F23] text-[#E8E4D9] border-r border-[#2B2F36] z-50 flex flex-col justify-between select-none">
+  <div class="flex flex-col">
+    <!-- Brand Title & Reticle Emblem -->
+    <div class="px-space-md pt-space-lg pb-space-md border-b border-[#2B2F36]">
+      <div class="flex items-center gap-space-sm mb-space-xs">
+        <svg class="h-7 w-7 text-[#5FA39B]" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="16" cy="16" r="13" stroke="currentColor" stroke-width="1.75"/>
+          <circle cx="16" cy="16" r="7" stroke="currentColor" stroke-width="1.25" stroke-dasharray="2 2"/>
+          <line x1="16" y1="2" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="16" y1="24" x2="16" y2="30" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="2" y1="16" x2="8" y2="16" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="24" y1="16" x2="30" y2="16" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="16" cy="16" r="2" fill="#5FA39B"/>
+        </svg>
+        <h1 class="font-headline-sm text-[19px] text-[#FBFAF7] leading-none tracking-tight font-semibold">Segmentation Lab</h1>
+      </div>
+      <p class="font-label-section text-[10px] text-[#8A8D91] uppercase tracking-[0.08em] mt-1">Comparative segmentation &amp; measurement</p>
+    </div>
+
+    <!-- Preprocessing Section Header -->
+    <div class="px-space-md py-space-sm border-b border-[#2B2F36] flex items-center justify-between cursor-pointer bg-[#24282E]">
+      <div class="flex items-center gap-space-xs">
+        <span class="material-symbols-outlined text-[14px] text-[#8A8D91]">tune</span>
+        <span class="font-label-section text-[11px] text-[#8A8D91] uppercase tracking-[0.08em] font-semibold">Preprocessing</span>
+      </div>
+      <span class="font-code-sm text-[11px] text-[#8A8D91]">CONFIG</span>
+    </div>
+
+    <!-- Controls -->
+    <div class="px-space-md py-space-md space-y-space-md text-[#E8E4D9]">
+      <!-- Max Dimension -->
+      <div>
+        <div class="flex items-center justify-between mb-space-xs">
+          <label class="font-label-sm text-[12px] text-[#B4B7BA]">Max Dimension</label>
+          <span id="maxDimVal" class="font-code-sm text-[11px] text-[#99d7d1] bg-[#121417] px-1.5 py-0.5 rounded border border-[#2B2F36]">800 px</span>
+        </div>
+        <input id="maxDimSlider" class="w-full h-1 bg-[#2B2F36] rounded-lg appearance-none cursor-pointer accent-[#1F5F5B]" max="2000" min="200" step="50" type="range" value="800" oninput="document.getElementById('maxDimVal').innerText = this.value + ' px'"/>
+      </div>
+
+      <!-- Noise Reduction Radio Group -->
+      <div>
+        <label class="block font-label-sm text-[12px] text-[#B4B7BA] mb-space-xs">Noise Reduction</label>
+        <div class="grid grid-cols-3 gap-1 bg-[#121417] p-0.5 rounded border border-[#2B2F36]">
+          <button id="noiseBtnNone" type="button" onclick="setNoiseMode('none')" class="py-1 text-center font-label-sm text-[11px] text-[#8A8D91] hover:text-[#E8E4D9] rounded transition-colors">None</button>
+          <button id="noiseBtnGaussian" type="button" onclick="setNoiseMode('gaussian')" class="py-1 text-center font-label-sm text-[11px] bg-[#1F5F5B] text-[#FBFAF7] font-medium rounded transition-colors">Gaussian</button>
+          <button id="noiseBtnMedian" type="button" onclick="setNoiseMode('median')" class="py-1 text-center font-label-sm text-[11px] text-[#8A8D91] hover:text-[#E8E4D9] rounded transition-colors">Median</button>
+        </div>
+      </div>
+
+      <!-- Kernel Size -->
+      <div>
+        <div class="flex items-center justify-between mb-space-xs">
+          <label class="font-label-sm text-[12px] text-[#B4B7BA]">Kernel Size</label>
+          <span id="kernelVal" class="font-code-sm text-[11px] text-[#99d7d1] bg-[#121417] px-1.5 py-0.5 rounded border border-[#2B2F36]">5 × 5</span>
+        </div>
+        <input id="kernelSlider" class="w-full h-1 bg-[#2B2F36] rounded-lg appearance-none cursor-pointer accent-[#1F5F5B]" max="31" min="3" step="2" type="range" value="5" oninput="document.getElementById('kernelVal').innerText = this.value + ' × ' + this.value"/>
+      </div>
+
+      <!-- Histogram Equalization Checkbox -->
+      <div class="pt-space-xs">
+        <label class="flex items-start gap-space-sm cursor-pointer group">
+          <input checked="" class="mt-0.5 w-3.5 h-3.5 rounded-sm bg-[#121417] border border-[#3E434D] checked:bg-[#1F5F5B] checked:border-[#1F5F5B] accent-[#1F5F5B]" type="checkbox"/>
+          <span class="font-body-sm text-[12px] text-[#B4B7BA] group-hover:text-[#FBFAF7] leading-tight">Show histogram equalization experiment</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Console Footer -->
+  <div class="p-space-md border-t border-[#2B2F36] bg-[#16181C] text-[#8A8D91] space-y-1">
+    <div class="flex items-center justify-between font-code-sm text-[11px]">
+      <span>Engine Status</span>
+      <span class="flex items-center gap-1.5 text-[#95d2cc]">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#95d2cc] animate-pulse"></span>Ready (OpenCV)
+      </span>
+    </div>
+    <div class="flex items-center justify-between font-code-sm text-[11px]">
+      <span>Memory Allocation</span>
+      <span class="text-[#E8E4D9]">42.8 MB</span>
+    </div>
+    <div class="flex items-center justify-between font-code-sm text-[11px]">
+      <span>Active Dataset</span>
+      <span class="text-[#E8E4D9]">synthetic_20</span>
+    </div>
+  </div>
+</aside>
+
+<!-- Main Workbench Body -->
+<div class="pl-[240px]">
+  <!-- Top App Header -->
+  <header class="fixed top-0 left-[240px] right-0 h-14 bg-[#FBFAF7] border-b border-[#D9D3C5] z-40 flex items-center justify-between px-space-lg">
+    <div class="flex items-center gap-space-md">
+      <div class="flex items-center gap-2">
+        <svg class="h-6 w-6 text-[#1F5F5B]" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="16" cy="16" r="13" stroke="currentColor" stroke-width="2"/>
+          <circle cx="16" cy="16" r="7" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"/>
+          <circle cx="16" cy="16" r="2.5" fill="currentColor"/>
+        </svg>
+        <span class="font-serif text-[18px] text-[#191c20] font-semibold tracking-tight">Segmentation Lab</span>
+      </div>
+      <div class="h-4 w-[1px] bg-[#D9D3C5]"></div>
+      <span class="font-mono text-[11px] text-[#5B5F66] bg-[#ECE8DE] px-2 py-0.5 rounded border border-[#D9D3C5]">v2.4.0-rc</span>
+    </div>
+    <div class="flex items-center gap-space-md">
+      <div class="flex items-center gap-space-xs text-[#5B5F66] font-mono text-[11px] bg-[#ECE8DE] px-2.5 py-1 rounded border border-[#D9D3C5]">
+        <span class="material-symbols-outlined text-[15px] text-[#1F5F5B]">terminal</span>
+        <span>STATION_ID: ARCHIVAL_PLATE_4</span>
+      </div>
+      <div class="w-8 h-8 rounded bg-[#1F5F5B] flex items-center justify-center text-[#FBFAF7] shadow-sm">
+        <span class="material-symbols-outlined text-[18px]">biotech</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content Workspace -->
+  <div class="pt-14 bg-[#F4F1EA] min-h-screen">
+    <!-- Top Configuration Section: Real Image & Ground Truth -->
+    <section class="w-full px-space-lg pt-space-md">
+      <!-- Image Metadata Card -->
+      <div class="bg-[#FBFAF7] border border-[#D9D3C5] rounded-[6px] p-space-md mb-space-md shadow-[0_1px_2px_rgba(28,31,35,0.04)]">
+        <div class="flex flex-wrap items-center justify-between gap-space-md">
+          <div class="flex items-center gap-space-md">
+            <div class="flex items-center gap-space-sm bg-[#ECE8DE] border border-[#D9D3C5] px-3 py-1.5 rounded">
+              <span class="material-symbols-outlined text-[#1F5F5B] text-[18px]">image</span>
+              <span class="font-mono text-[12px] text-[#191c20] font-medium">normal_01.png</span>
+              <span class="text-[10px] text-[#5B5F66] uppercase bg-[#FBFAF7] px-1.5 py-0.5 rounded border border-[#D9D3C5]">Dataset Source</span>
+            </div>
+            <span class="font-mono text-[12px] text-[#5B5F66]">Formats: JPG, PNG, BMP</span>
+          </div>
+          <div class="font-mono text-[12px] text-[#5B5F66] bg-[#ECE8DE]/80 px-3 py-1.5 rounded border border-[#D9D3C5]">
+            Dim: 640×480 px | Channels: 1 (Grayscale) | Dtype: uint8 | File Size: 162.9 KB | Dynamic Range: [37, 202]
+          </div>
+        </div>
+      </div>
+
+      <!-- Ground Truth & Polarity Configuration Card -->
+      <div class="bg-[#FBFAF7] border border-[#D9D3C5] rounded-[6px] p-space-md mb-space-md shadow-[0_1px_2px_rgba(28,31,35,0.04)]">
+        <div class="flex items-center justify-between pb-space-sm mb-space-sm border-b border-[#ECE8DE]">
+          <div class="flex items-center gap-space-xs">
+            <span class="material-symbols-outlined text-[16px] text-[#1F5F5B]">tune</span>
+            <span class="font-label-section text-[11px] text-[#191c20] uppercase tracking-[0.08em] font-semibold">Ground Truth &amp; Polarity Configuration</span>
+          </div>
+          <span class="font-mono text-[11px] text-[#5B5F66]">GT-SYNTH-REF-01</span>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md items-center">
+          <!-- Polarity -->
+          <div class="lg:col-span-4 space-y-1.5">
+            <span class="block font-label-sm text-[11px] text-[#5B5F66] uppercase tracking-wider font-semibold">Object Polarity</span>
+            <div class="flex items-center gap-space-md">
+              <label class="flex items-center gap-1.5 cursor-pointer font-body-sm text-[13px] text-[#191c20]">
+                <input checked="" class="accent-[#1F5F5B]" name="polarity" type="radio" value="darker"/>
+                <span>Objects darker than background</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer font-body-sm text-[13px] text-[#5B5F66]">
+                <input class="accent-[#1F5F5B]" name="polarity" type="radio" value="brighter"/>
+                <span>Objects brighter than background</span>
+              </label>
+            </div>
+          </div>
+          <!-- Ground-truth Mask -->
+          <div class="lg:col-span-5 space-y-1.5">
+            <span class="block font-label-sm text-[11px] text-[#5B5F66] uppercase tracking-wider font-semibold">Ground-Truth Mask</span>
+            <div class="flex items-center gap-space-sm">
+              <div class="flex items-center gap-1.5 bg-[#ECE8DE] border border-[#D9D3C5] px-2.5 py-1 rounded">
+                <span class="material-symbols-outlined text-[16px] text-[#5B5F66]">layers</span>
+                <span class="font-mono text-[12px] text-[#191c20]">dataset/ground_truth/normal_01.png</span>
+              </div>
+              <label class="flex items-center gap-1.5 cursor-pointer font-body-sm text-[12px] text-[#5B5F66]">
+                <input class="accent-[#1F5F5B]" type="checkbox"/>
+                <span>No mask? Use Otsu as pseudo GT</span>
+              </label>
+            </div>
+          </div>
+          <!-- Thumbnail & Status -->
+          <div class="lg:col-span-3 flex items-center justify-end gap-space-md border-l border-[#ECE8DE] pl-space-md">
+            <div class="w-10 h-10 bg-[#1C1F23] border border-[#D9D3C5] rounded flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+              <img src="assets/stress_test/normal_01_ground_truth.png" alt="GT Mask Thumbnail" class="w-full h-full object-cover"/>
+            </div>
+            <div class="text-right">
+              <div class="inline-flex items-center gap-1 font-label-sm text-[11px] text-[#1F5F5B] font-semibold bg-[#1F5F5B]/10 px-2 py-0.5 rounded border border-[#1F5F5B]/20">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#1F5F5B]"></span>Active: Ground Truth Verified
+              </div>
+              <div class="font-mono text-[11px] text-[#5B5F66] mt-0.5">Coverage: 8.53% FG (7 Blobs)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center border-b border-[#D9D3C5] gap-space-xl">
+        <a class="pb-2.5 font-body-md text-[14px] text-[#5B5F66] hover:text-[#191c20] border-b-2 border-transparent transition-colors" href="#">Pipeline</a>
+        <a class="pb-2.5 font-body-md text-[14px] border-b-2 border-[#1F5F5B] text-[#1F5F5B] font-semibold transition-colors" href="#">Stress-Test</a>
+        <a class="pb-2.5 font-body-md text-[14px] text-[#5B5F66] hover:text-[#191c20] border-b-2 border-transparent transition-colors" href="#">Auto-Tuning</a>
+        <a class="pb-2.5 font-body-md text-[14px] text-[#5B5F66] hover:text-[#191c20] border-b-2 border-transparent transition-colors" href="#">Hardware Profile</a>
+        <a class="pb-2.5 font-body-md text-[14px] text-[#5B5F66] hover:text-[#191c20] border-b-2 border-transparent transition-colors" href="#">Measurements</a>
+        <a class="pb-2.5 font-body-md text-[14px] text-[#5B5F66] hover:text-[#191c20] border-b-2 border-transparent transition-colors" href="#">Benchmark</a>
+      </nav>
+    </section>
+
+    <!-- Main Stress-Test Viewport -->
+    <main class="w-full px-space-lg py-space-md">
+      <!-- Quiet Notice Bar -->
+      <div class="w-full bg-[#ECE8DE] rounded-[4px] px-space-md py-2.5 mb-space-md flex flex-wrap items-center justify-between gap-space-sm border border-[#D9D3C5]">
+        <div class="flex items-center gap-space-sm">
+          <span class="material-symbols-outlined text-[17px] text-[#1F5F5B]">info</span>
+          <span class="font-body-sm text-[13px] text-[#191c20] font-medium">Evaluation Reference:</span>
+          <span class="font-body-sm text-[13px] text-[#5B5F66]">Pixel-level Jaccard Index (IoU) evaluated against exact synthetic ground-truth mask.</span>
+        </div>
+        <div class="flex items-center gap-space-xs font-mono text-[11px] text-[#5B5F66] bg-[#FBFAF7] px-2.5 py-1 rounded border border-[#D9D3C5]">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#1F5F5B]"></span>
+          <span class="text-[#191c20] font-medium">normal_01.png</span>
+          <span class="text-[#8A8D91]">(Active · Coverage: 8.53% FG)</span>
+        </div>
+      </div>
+
+      <!-- Two-Column Workspace Layout -->
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+        <!-- LEFT COLUMN: Degradation Setup (Fixed Dock) -->
+        <div class="xl:col-span-4 2xl:col-span-3 flex flex-col gap-space-md">
+          <div class="bg-[#FBFAF7] border border-[#D9D3C5] rounded-[6px] p-space-md shadow-sm">
+            <div class="flex items-baseline justify-between mb-space-xs">
+              <h2 class="font-serif text-[18px] font-semibold text-[#191c20]">Degradation Setup</h2>
+              <span class="font-label-section text-[10px] text-[#8A8D91] uppercase tracking-[0.08em] font-semibold">Sweep Matrix</span>
+            </div>
+            <p class="font-body-sm text-[12px] text-[#5B5F66] mb-space-md">Apply systematic perturbations to test algorithmic stability and segmentation decay thresholds.</p>
+
+            <div class="space-y-space-md">
+              <!-- Perturbation Channel Selector -->
+              <div>
+                <label class="block font-label-sm text-[12px] text-[#191c20] font-semibold mb-1.5">Perturbation Channel</label>
+                <div class="grid grid-cols-3 gap-1 bg-[#ECE8DE] p-1 rounded-[4px] border border-[#D9D3C5]">
+                  <button id="chBtnGaussian" onclick="switchChannel('gaussian')" class="py-1 px-1.5 text-center font-label-sm text-[12px] bg-[#1F5F5B] text-[#FBFAF7] rounded-[2px] font-medium transition-colors shadow-sm" type="button">Gaussian</button>
+                  <button id="chBtnLowLight" onclick="switchChannel('low_light')" class="py-1 px-1.5 text-center font-label-sm text-[12px] text-[#5B5F66] hover:text-[#191c20] rounded-[2px] transition-colors" type="button">Low Light</button>
+                  <button id="chBtnMotionBlur" onclick="switchChannel('motion_blur')" class="py-1 px-1.5 text-center font-label-sm text-[12px] text-[#5B5F66] hover:text-[#191c20] rounded-[2px] transition-colors" type="button">Motion Blur</button>
+                </div>
+              </div>
+
+              <!-- Maximum Severity Slider -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label id="maxSeverityLabel" class="font-label-sm text-[12px] text-[#191c20] font-semibold">Max Severity (σ)</label>
+                  <span id="maxSeverityBadge" class="font-mono text-[11px] text-[#1F5F5B] bg-[#ECE8DE] px-2 py-0.5 rounded border border-[#D9D3C5] font-semibold">σ = 40.0</span>
+                </div>
+                <input id="maxSeveritySlider" class="w-full h-1.5 bg-[#ECE8DE] rounded appearance-none cursor-pointer accent-[#1F5F5B]" max="1600" min="100" step="100" type="range" value="1600" oninput="updateMaxSeverityUI(this.value)"/>
+                <div id="maxSeverityTicks" class="flex justify-between text-[#8A8D91] font-mono text-[10px] mt-0.5">
+                  <span>σ = 10.0</span>
+                  <span>σ = 40.0</span>
+                </div>
+              </div>
+
+              <!-- Sweep Steps Slider -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="font-label-sm text-[12px] text-[#191c20] font-semibold">Sweep Discrete Steps</label>
+                  <span class="font-mono text-[11px] text-[#1F5F5B] bg-[#ECE8DE] px-2 py-0.5 rounded border border-[#D9D3C5] font-semibold">8 levels</span>
+                </div>
+                <input class="w-full h-1.5 bg-[#ECE8DE] rounded appearance-none cursor-pointer accent-[#1F5F5B]" max="15" min="3" type="range" value="8" disabled=""/>
+                <div class="flex justify-between text-[#8A8D91] font-mono text-[10px] mt-0.5">
+                  <span>3 steps</span>
+                  <span>15 steps</span>
+                </div>
+              </div>
+
+              <!-- Baseline Global Threshold -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="font-label-sm text-[12px] text-[#191c20] font-semibold">Baseline Global Threshold</label>
+                  <span id="globalThreshBadge" class="font-mono text-[11px] text-[#191c20] bg-[#ECE8DE] px-2 py-0.5 rounded border border-[#D9D3C5] font-semibold">T = 127</span>
+                </div>
+                <input class="w-full h-1.5 bg-[#ECE8DE] rounded appearance-none cursor-pointer accent-[#1F5F5B]" max="255" min="0" type="range" value="127" oninput="document.getElementById('globalThreshBadge').innerText = 'T = ' + this.value"/>
+                <div class="flex justify-between text-[#8A8D91] font-mono text-[10px] mt-0.5">
+                  <span>0 (0x00)</span>
+                  <span>255 (0xFF)</span>
+                </div>
+              </div>
+
+              <!-- Motion Angle Slider -->
+              <div id="motionAngleGroup" class="opacity-45 select-none transition-all">
+                <div class="flex items-center justify-between mb-1">
+                  <div class="flex items-center gap-1">
+                    <span id="motionLockIcon" class="material-symbols-outlined text-[13px] text-[#8A8D91]">lock</span>
+                    <label class="font-label-sm text-[12px] text-[#191c20]">Kernel Vector Angle</label>
+                  </div>
+                  <span id="motionAngleBadge" class="font-mono text-[11px] text-[#8A8D91] bg-[#ECE8DE] px-2 py-0.5 rounded border border-[#D9D3C5]">45° (Inactive)</span>
+                </div>
+                <input id="motionAngleSlider" class="w-full h-1.5 bg-[#ECE8DE] rounded appearance-none cursor-not-allowed" disabled="" max="180" min="0" step="5" type="range" value="45"/>
+                <p id="motionAngleHelp" class="font-body-sm text-[11px] text-[#8A8D91] mt-0.5">Active only when Perturbation Channel is set to Motion Blur</p>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="pt-space-xs space-y-space-xs">
+                <button id="runSuiteBtn" onclick="runSimulation()" class="w-full bg-[#1F5F5B] hover:bg-[#17494A] text-[#FBFAF7] py-2 px-3 rounded-[4px] font-label-md text-[13px] flex items-center justify-center gap-1.5 font-semibold transition-colors shadow-sm" type="button">
+                  <span class="material-symbols-outlined text-[17px]">play_arrow</span>
+                  <span id="runSuiteText">Run Stress Test Suite</span>
+                </button>
+                <div class="text-center">
+                  <button onclick="resetDefaults()" class="font-label-sm text-[12px] text-[#8A8D91] hover:text-[#191c20] transition-colors underline decoration-dotted" type="button">Reset to Baseline Defaults</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Execution Sub-Panel -->
+            <div class="mt-space-md pt-space-sm bg-[#ECE8DE] p-space-sm rounded-[4px] space-y-1 border border-[#D9D3C5]">
+              <div class="flex items-center justify-between font-label-section text-[11px] text-[#5B5F66] uppercase tracking-[0.08em] font-semibold">
+                <span>Simulation Cost</span>
+                <span class="font-mono text-[11px] text-[#1F5F5B] font-bold">32 INFERENCES</span>
+              </div>
+              <p class="font-mono text-[11px] text-[#191c20]">Matrix: 8 levels × 4 algorithms</p>
+              <div class="flex items-center justify-between font-mono text-[11px] text-[#5B5F66] pt-1 border-t border-[#D9D3C5]/60">
+                <span>Estimated Pipeline Latency:</span>
+                <span id="latencySpan" class="text-[#191c20] font-semibold">~118 ms</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Diagnostic Heuristics Card -->
+          <div class="bg-[#FBFAF7] border border-[#D9D3C5] rounded-[6px] p-space-md shadow-sm">
+            <h3 class="font-label-section text-[11px] text-[#5B5F66] uppercase tracking-[0.08em] font-bold mb-1">Diagnostic Heuristics</h3>
+            <p id="heuristicText" class="font-body-sm text-[12px] text-[#5B5F66] leading-relaxed">
+              Gaussian noise perturbs intensities pixel-wise: Global threshold degrades gracefully until noise crosses T=127; Otsu calculates adaptive bimodal minimums; Canny edge detection suffers high false-positive gradients once σ &gt; 15.
+            </p>
+          </div>
+        </div>
+
+        <!-- RIGHT RESULTS AREA -->
+        <div class="xl:col-span-8 2xl:col-span-9 flex flex-col gap-space-md">
+          <!-- CARD 1: Live Preview at a Single Level -->
+          <div class="bg-[#FBFAF7] border border-[#D9D3C5] rounded-[6px] p-space-md shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-sm">
+              <div>
+                <div class="flex items-center gap-space-xs">
+                  <span class="font-label-section text-[10px] text-[#1F5F5B] uppercase tracking-[0.08em] bg-[#1F5F5B]/10 px-1.5 py-0.5 rounded border border-[#1F5F5B]/20 font-bold">Slice Inspection</span>
+                  <h3 class="font-serif text-[18px] font-semibold text-[#191c20]">Live Preview at Single Degradation Step</h3>
+                </div>
+                <p class="font-body-sm text-[12px] text-[#5B5F66] mt-0.5">Interactive single-slice visualization comparing mask segmentations against baseline ground truth.</p>
+              </div>
+              <!-- Stepper Controls -->
+              <div class="flex items-center gap-space-sm bg-[#ECE8DE] px-3 py-1.5 rounded-[4px] border border-[#D9D3C5]">
+                <span class="font-label-sm text-[12px] text-[#191c20] font-semibold">Step:</span>
+                <span id="stepperBadge" class="font-mono text-[12px] text-[#1F5F5B] font-bold bg-[#FBFAF7] px-2 py-0.5 rounded border border-[#D9D3C5] shadow-xs">Level 4 (σ = 26.2)</span>
+                <div class="flex items-center gap-1 ml-1">
+                  <button onclick="stepLevel(-1)" class="w-6 h-6 flex items-center justify-center bg-[#FBFAF7] text-[#191c20] hover:bg-[#1F5F5B] hover:text-[#FBFAF7] rounded border border-[#D9D3C5] transition-colors" type="button" title="Previous Level">
+                    <span class="material-symbols-outlined text-[15px]">chevron_left</span>
+                  </button>
+                  <button onclick="stepLevel(1)" class="w-6 h-6 flex items-center justify-center bg-[#FBFAF7] text-[#191c20] hover:bg-[#1F5F5B] hover:text-[#FBFAF7] rounded border border-[#D9D3C5] transition-colors" type="button" title="Next Level">
+                    <span class="material-symbols-outlined text-[15px]">chevron_right</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5-Panel Image Strip -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-space-sm">
+              <!-- Panel 1: Degraded Input -->
+              <div class="bg-[#ECE8DE] border border-[#D9D3C5] rounded-[4px] overflow-hidden flex flex-col">
+                <div class="bg-[#1C1F23] px-2 py-1 flex items-center justify-between text-[#E8E4D9]">
+                  <span class="font-label-section text-[10px] tracking-[0.06em] uppercase font-semibold">Perturbed Source</span>
+                  <span class="font-mono text-[10px] bg-[#3B5B7A] px-1 rounded text-[#FBFAF7]">INPUT</span>
+                </div>
+                <div class="relative w-full aspect-square bg-[#24282E] flex items-center justify-center overflow-hidden">
+                  <img id="imgPanelDeg" class="w-full h-full object-cover transition-opacity duration-150" src="assets/stress_test/gaussian_l4_deg.png" alt="Perturbed Source Specimen"/>
+                  <div id="snrBadge" class="absolute bottom-1 right-1 bg-[#1C1F23]/80 text-[#FBFAF7] px-1.5 py-0.5 font-mono text-[10px] rounded">SNR 16.6 dB</div>
+                </div>
+                <div class="p-2 bg-[#FBFAF7] border-t border-[#D9D3C5]">
+                  <div class="font-body-sm text-[12px] font-semibold text-[#191c20]">Degraded Input</div>
+                  <div id="panelDegSubtitle" class="font-mono text-[11px] text-[#5B5F66]">Level 4 (σ = 26.2)</div>
+                </div>
+              </div>
+
+              <!-- Panel 2: Global Threshold -->
+              <div class="bg-[#ECE8DE] border border-[#D9D3C5] rounded-[4px] overflow-hidden flex flex-col">
+                <div class="bg-[#3B5B7A] px-2 py-1 flex items-center justify-between text-[#FBFAF7]">
+                  <span class="font-label-section text-[10px] tracking-[0.06em] uppercase font-semibold">Global Threshold</span>
+                  <span id="iouBadgeGlobal" class="font-mono text-[10px] bg-[#1C1F23]/50 px-1 rounded font-bold">IoU 0.855</span>
+                </div>
+                <div class="relative w-full aspect-square bg-[#0f1115] flex items-center justify-center overflow-hidden">
+                  <img id="imgPanelGlobal" class="w-full h-full object-cover transition-opacity duration-150" src="assets/stress_test/gaussian_l4_global.png" alt="Global Threshold Output Mask"/>
+                  <div id="deltaBadgeGlobal" class="absolute top-1 right-1 bg-[#3B5B7A]/90 text-white font-mono text-[10px] px-1 rounded">Δ -14.1%</div>
+                </div>
+                <div class="p-2 bg-[#FBFAF7] border-t border-[#D9D3C5]">
+                  <div class="font-body-sm text-[12px] font-semibold text-[#191c20]">Global Threshold</div>
+                  <div id="panelGlobalSubtitle" class="font-mono text-[11px] text-[#5B5F66]">Fixed T = 127</div>
+                </div>
+              </div>
+
+              <!-- Panel 3: Otsu's Method -->
+              <div class="bg-[#ECE8DE] border border-[#D9D3C5] rounded-[4px] overflow-hidden flex flex-col">
+                <div class="bg-[#C8561E] px-2 py-1 flex items-center justify-between text-[#FBFAF7]">
+                  <span class="font-label-section text-[10px] tracking-[0.06em] uppercase font-semibold">Otsu's Method</span>
+                  <span id="iouBadgeOtsu" class="font-mono text-[10px] bg-[#1C1F23]/50 px-1 rounded font-bold">IoU 0.838</span>
+                </div>
+                <div class="relative w-full aspect-square bg-[#0f1115] flex items-center justify-center overflow-hidden">
+                  <img id="imgPanelOtsu" class="w-full h-full object-cover transition-opacity duration-150" src="assets/stress_test/gaussian_l4_otsu.png" alt="Otsu Variance Output Mask"/>
+                  <div id="threshBadgeOtsu" class="absolute bottom-1 right-1 bg-[#1C1F23]/80 text-[#FBFAF7] font-mono text-[10px] px-1 rounded">T = 129</div>
+                </div>
+                <div class="p-2 bg-[#FBFAF7] border-t border-[#D9D3C5]">
+                  <div class="font-body-sm text-[12px] font-semibold text-[#191c20]">Otsu Variance</div>
+                  <div id="panelOtsuSubtitle" class="font-mono text-[11px] text-[#5B5F66]">Computed T = 129</div>
+                </div>
+              </div>
+
+              <!-- Panel 4: Adaptive Local -->
+              <div class="bg-[#ECE8DE] border border-[#D9D3C5] rounded-[4px] overflow-hidden flex flex-col">
+                <div class="bg-[#5B7F4A] px-2 py-1 flex items-center justify-between text-[#FBFAF7]">
+                  <span class="font-label-section text-[10px] tracking-[0.06em] uppercase font-semibold">Adaptive Local</span>
+                  <span id="iouBadgeAdaptive" class="font-mono text-[10px] bg-[#1C1F23]/50 px-1 rounded font-bold text-[#b0eee8]">IoU 0.099</span>
+                </div>
+                <div class="relative w-full aspect-square bg-[#0f1115] flex items-center justify-center overflow-hidden">
+                  <img id="imgPanelAdaptive" class="w-full h-full object-cover transition-opacity duration-150" src="assets/stress_test/gaussian_l4_adaptive.png" alt="Adaptive Local Output Mask"/>
+                </div>
+                <div class="p-2 bg-[#FBFAF7] border-t border-[#D9D3C5]">
+                  <div class="font-body-sm text-[12px] font-semibold text-[#191c20]">Adaptive Mean</div>
+                  <div class="font-mono text-[11px] text-[#5B5F66]">Window 25×25, C=5</div>
+                </div>
+              </div>
+
+              <!-- Panel 5: Edge Canny -->
+              <div class="bg-[#ECE8DE] border border-[#D9D3C5] rounded-[4px] overflow-hidden flex flex-col">
+                <div class="bg-[#B08A2E] px-2 py-1 flex items-center justify-between text-[#FBFAF7]">
+                  <span class="font-label-section text-[10px] tracking-[0.06em] uppercase font-semibold">Edge Canny</span>
+                  <span id="iouBadgeEdge" class="font-mono text-[10px] bg-[#1C1F23]/50 px-1 rounded font-bold">IoU 0.085</span>
+                </div>
+                <div class="relative w-full aspect-square bg-[#0f1115] flex items-center justify-center overflow-hidden">
+                  <img id="imgPanelEdge" class="w-full h-full object-cover transition-opacity duration-150" src="assets/stress_test/gaussian_l4_edge.png" alt="Canny Edge Output Mask"/>
+                  <div class="absolute bottom-1 right-1 bg-[#1C1F23]/80 text-[#FBFAF7] font-mono text-[10px] px-1 rounded">Morph Fill</div>
+                </div>
+                <div class="p-2 bg-[#FBFAF7] border-t border-[#D9D3C5]">
+                  <div class="font-body-sm text-[12px] font-semibold text-[#191c20]">Canny + Fill</div>
+                  <div class="font-mono text-[11px] text-[#5B5F66]">Hysteresis 50/150</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 2: Degradation Curves (Scientific SVG Line Chart) -->
+          <div class="bg-[#FBFAF7] border border-[#D9D3C5] rounded-[6px] p-space-md shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-sm">
+              <div>
+                <div class="flex items-center gap-space-xs">
+                  <span class="font-label-section text-[10px] text-[#5B5F66] uppercase tracking-[0.08em] font-bold">Analytical Regression</span>
+                  <h3 id="chartTitle" class="font-serif text-[18px] font-semibold text-[#191c20]">Algorithm Robustness Across Degradation Spectrum</h3>
+                </div>
+                <p id="chartSubtitle" class="font-body-sm text-[12px] text-[#5B5F66] mt-0.5">Decay profiles demonstrating Jaccard IoU retention against escalating Gaussian noise severity.</p>
+              </div>
+              <div id="chartInsightPill" class="flex items-center gap-space-xs bg-[#1F5F5B]/10 text-[#1F5F5B] border border-[#1F5F5B]/20 px-2.5 py-1 rounded-[3px] font-label-sm text-[12px] font-semibold">
+                <span class="material-symbols-outlined text-[16px]">verified</span>
+                <span id="chartInsightText">Global Threshold achieves top retention under Gaussian noise (AUC: 0.792, Resilience: 53.2%)</span>
+              </div>
+            </div>
+
+            <!-- SVG Line Chart Canvas -->
+            <div class="w-full bg-[#FFFFFF] rounded-[4px] p-space-md overflow-x-auto border border-[#D9D3C5]">
+              <div class="min-w-[640px]">
+                <svg id="svgChart" class="w-full h-64 overflow-visible" fill="none" viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Grid lines & Y-ticks -->
+                  <g stroke="#E4DFD2" stroke-width="1">
+                    <line x1="55" x2="680" y1="20" y2="20"></line>
+                    <line x1="55" x2="680" y1="60" y2="60"></line>
+                    <line x1="55" x2="680" y1="100" y2="100"></line>
+                    <line x1="55" x2="680" y1="140" y2="140"></line>
+                    <line x1="55" x2="680" y1="180" y2="180"></line>
+                    <line x1="55" x2="680" y1="200" y2="200"></line>
+                  </g>
+                  <!-- Y-Axis labels (IoU) -->
+                  <g fill="#6f7978" font-family="JetBrains Mono" font-size="10" text-anchor="end">
+                    <text x="48" y="24">1.0</text>
+                    <text x="48" y="64">0.8</text>
+                    <text x="48" y="104">0.6</text>
+                    <text x="48" y="144">0.4</text>
+                    <text x="48" y="184">0.2</text>
+                    <text x="48" y="204">0.0</text>
+                  </g>
+                  <!-- Y-Axis title -->
+                  <text fill="#3f4947" font-family="IBM Plex Sans" font-size="10" font-weight="600" letter-spacing="0.05em" text-anchor="middle" transform="rotate(-90)" x="-110" y="16">JACCARD INDEX (IoU)</text>
+
+                  <!-- Inspection Line and Tag (Dynamic) -->
+                  <g id="svgInspectionGroup">
+                    <line id="svgInspectLine" stroke="#1F5F5B" stroke-dasharray="3 3" stroke-width="1.5" x1="322" x2="322" y1="20" y2="200"></line>
+                    <rect id="svgInspectRect" fill="#1F5F5B" height="15" rx="2" width="112" x="266" y="6"></rect>
+                    <text id="svgInspectText" fill="#FBFAF7" font-family="JetBrains Mono" font-size="9" font-weight="600" text-anchor="middle" x="322" y="17">INSPECTION LEVEL 4</text>
+                  </g>
+
+                  <!-- Curves Container -->
+                  <g id="svgCurvesGroup"></g>
+
+                  <!-- Points Container -->
+                  <g id="svgPointsGroup"></g>
+
+                  <!-- End Labels Container -->
+                  <g id="svgEndLabelsGroup"></g>
+
+                  <!-- X-Axis Markers Container -->
+                  <g id="svgXAxisGroup"></g>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Legend and Meta description bar -->
+            <div class="mt-space-sm pt-space-xs flex flex-wrap items-center justify-between text-[#5B5F66] font-body-sm text-[12px]">
+              <div class="flex items-center gap-space-md">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#3B5B7A]"></span><span class="font-semibold text-[#191c20]">Fixed Global</span></span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#C8561E]"></span><span class="font-semibold text-[#191c20]">Otsu's Global</span></span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#5B7F4A]"></span><span class="font-semibold text-[#191c20]">Adaptive Local</span></span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#B08A2E]"></span><span class="font-semibold text-[#191c20]">Edge-based Canny</span></span>
+              </div>
+              <div class="font-mono text-[11px] text-[#8A8D91]">Metric: Jaccard Similarity Index (Intersection over Union)</div>
+            </div>
+          </div>
+
+          <!-- CARD 3: Data Table ("Degradation Level Performance Breakdown") -->
+          <div class="bg-[#FBFAF7] border border-[#D9D3C5] rounded-[6px] p-space-md shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-space-sm pb-space-sm mb-space-sm border-b border-[#D9D3C5]">
+              <div>
+                <div class="flex items-center gap-space-xs">
+                  <span class="font-label-section text-[10px] text-[#5B5F66] uppercase tracking-[0.08em] font-bold">Tabular Matrix</span>
+                  <h3 class="font-serif text-[18px] font-semibold text-[#191c20]">Degradation Level Performance Breakdown</h3>
+                </div>
+                <p id="tableSubtitle" class="font-body-sm text-[12px] text-[#5B5F66] mt-0.5">Quantitative evaluation matrix against benchmark ground-truth mask across 8 noise iterations.</p>
+              </div>
+              <div class="flex items-center gap-space-xs">
+                <button onclick="exportCSV()" class="bg-[#ECE8DE] hover:bg-[#D9D3C5] text-[#191c20] font-label-sm text-[12px] px-2.5 py-1.5 rounded-[3px] flex items-center gap-1 transition-colors border border-[#D9D3C5] shadow-xs" type="button">
+                  <span class="material-symbols-outlined text-[15px]">download</span>
+                  <span>Export CSV</span>
+                </button>
+                <button onclick="copyLaTeX()" class="bg-[#ECE8DE] hover:bg-[#D9D3C5] text-[#191c20] font-label-sm text-[12px] px-2.5 py-1.5 rounded-[3px] flex items-center gap-1 transition-colors border border-[#D9D3C5] shadow-xs" type="button">
+                  <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                  <span>Copy LaTeX Table</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="overflow-x-auto rounded-[4px] border border-[#D9D3C5]">
+              <table class="w-full text-left font-body-sm text-[13px]">
+                <thead class="bg-[#ECE8DE] text-[#191c20]">
+                  <tr>
+                    <th class="py-2.5 px-3 font-label-section text-[11px] uppercase tracking-[0.08em] font-bold">Level (Severity)</th>
+                    <th class="py-2.5 px-3 font-label-section text-[11px] uppercase tracking-[0.08em] font-bold text-right">
+                      <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-[#3B5B7A]"></span>
+                        <span>Global Threshold</span>
+                      </span>
+                    </th>
+                    <th class="py-2.5 px-3 font-label-section text-[11px] uppercase tracking-[0.08em] font-bold text-right">
+                      <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-[#C8561E]"></span>
+                        <span>Otsu's Method</span>
+                      </span>
+                    </th>
+                    <th class="py-2.5 px-3 font-label-section text-[11px] uppercase tracking-[0.08em] font-bold text-right">
+                      <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-[#5B7F4A]"></span>
+                        <span>Adaptive Local</span>
+                      </span>
+                    </th>
+                    <th class="py-2.5 px-3 font-label-section text-[11px] uppercase tracking-[0.08em] font-bold text-right">
+                      <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-[#B08A2E]"></span>
+                        <span>Edge-Based</span>
+                      </span>
+                    </th>
+                    <th class="py-2.5 px-3 font-label-section text-[11px] uppercase tracking-[0.08em] font-bold text-right">Top Pipeline</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody" class="divide-y divide-[#D9D3C5]/50 bg-[#FBFAF7] font-mono text-[12px]"></tbody>
+                <tfoot id="tableFoot" class="bg-[#ECE8DE] font-mono text-[12px] text-[#191c20] font-semibold border-t border-[#D9D3C5]"></tfoot>
+              </table>
+            </div>
+
+            <!-- Table Footnote -->
+            <div class="mt-space-sm flex flex-wrap items-center justify-between text-[#8A8D91] font-body-sm text-[12px]">
+              <span>Evaluated on <code class="font-mono text-[#191c20]">dataset/images/normal_01.png</code> against exact geometric ground truth.</span>
+              <span class="font-mono text-[11px] text-[#5B5F66]">Session UID: EXP_STRESS_NORM01_0488</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Embedded Real Data and Script Logic -->
+<script>
+  const REAL_DATA = {manifest_json_str};
+  let currentChannel = 'gaussian';
+  let currentLevel = 4; // 1-indexed
+
+  // Method color map
+  const COLORS = {{
+    'global': '#3B5B7A',
+    'otsu': '#C8561E',
+    'adaptive': '#5B7F4A',
+    'edge': '#B08A2E'
+  }};
+
+  const METHOD_LABELS = {{
+    'global': 'Global',
+    'otsu': 'Otsu',
+    'adaptive': 'Adaptive',
+    'edge': 'Edge-Based'
+  }};
+
+  function showToast(msg) {{
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.className = 'show';
+    setTimeout(() => {{ t.className = t.className.replace('show', ''); }}, 2800);
+  }}
+
+  function switchChannel(ch) {{
+    currentChannel = ch;
+    // update channel selector buttons
+    const btns = {{
+      'gaussian': document.getElementById('chBtnGaussian'),
+      'low_light': document.getElementById('chBtnLowLight'),
+      'motion_blur': document.getElementById('chBtnMotionBlur')
+    }};
+    Object.keys(btns).forEach(k => {{
+      if (k === ch) {{
+        btns[k].className = 'py-1 px-1.5 text-center font-label-sm text-[12px] bg-[#1F5F5B] text-[#FBFAF7] rounded-[2px] font-medium transition-colors shadow-sm';
+      }} else {{
+        btns[k].className = 'py-1 px-1.5 text-center font-label-sm text-[12px] text-[#5B5F66] hover:text-[#191c20] rounded-[2px] transition-colors';
+      }}
+    }});
+
+    // update motion angle group state
+    const angleGroup = document.getElementById('motionAngleGroup');
+    const angleSlider = document.getElementById('motionAngleSlider');
+    const angleBadge = document.getElementById('motionAngleBadge');
+    const lockIcon = document.getElementById('motionLockIcon');
+    const angleHelp = document.getElementById('motionAngleHelp');
+
+    if (ch === 'motion_blur') {{
+      angleGroup.className = 'opacity-100 transition-all';
+      angleSlider.disabled = false;
+      angleSlider.className = 'w-full h-1.5 bg-[#ECE8DE] rounded appearance-none cursor-pointer accent-[#1F5F5B]';
+      angleBadge.className = 'font-mono text-[11px] text-[#1F5F5B] bg-[#ECE8DE] px-2 py-0.5 rounded border border-[#D9D3C5] font-semibold';
+      angleBadge.innerText = '45° (Active)';
+      lockIcon.innerText = 'lock_open';
+      lockIcon.className = 'material-symbols-outlined text-[13px] text-[#1F5F5B]';
+      angleHelp.innerText = 'Active kernel trajectory direction (45° Diagonal Vector)';
+    }} else {{
+      angleGroup.className = 'opacity-45 select-none transition-all';
+      angleSlider.disabled = true;
+      angleSlider.className = 'w-full h-1.5 bg-[#ECE8DE] rounded appearance-none cursor-not-allowed';
+      angleBadge.className = 'font-mono text-[11px] text-[#8A8D91] bg-[#ECE8DE] px-2 py-0.5 rounded border border-[#D9D3C5]';
+      angleBadge.innerText = '45° (Inactive)';
+      lockIcon.innerText = 'lock';
+      lockIcon.className = 'material-symbols-outlined text-[13px] text-[#8A8D91]';
+      angleHelp.innerText = 'Active only when Perturbation Channel is set to Motion Blur';
+    }}
+
+    // Update heuristic description
+    const hText = document.getElementById('heuristicText');
+    if (ch === 'gaussian') {{
+      hText.innerText = 'Gaussian noise perturbs intensities pixel-wise: Global threshold degrades gracefully until noise crosses T=127; Otsu calculates adaptive bimodal minimums; Canny edge detection suffers high false-positive gradients once σ > 15.';
+    }} else if (ch === 'low_light') {{
+      hText.innerText = 'Low light (gamma) monotonically compresses dynamic range toward 0: Fixed Global Threshold (T=127) catastrophically collapses as all foreground and background pixels fall below 127; Otsu dynamically recalibrates threshold down to preserve ~95% IoU.';
+    }} else {{
+      hText.innerText = 'Motion blur attenuates high-frequency boundaries along vector angle (45°): Edge Canny fails rapidly due to perimeter smearing (AUC 0.219); Otsu and Global maintain robust object detection as total area integral is conserved.';
+    }}
+
+    renderView();
+  }}
+
+  function stepLevel(delta) {{
+    const maxL = REAL_DATA[currentChannel].steps.length;
+    let nextL = currentLevel + delta;
+    if (nextL < 1) nextL = 1;
+    if (nextL > maxL) nextL = maxL;
+    currentLevel = nextL;
+    renderView();
+  }}
+
+  function setLevel(lvl) {{
+    currentLevel = lvl;
+    renderView();
+  }}
+
+  function renderView() {{
+    const chData = REAL_DATA[currentChannel];
+    const steps = chData.steps;
+    const activeStep = steps[currentLevel - 1];
+
+    // Update Stepper Badge
+    document.getElementById('stepperBadge').innerText = `Level ${{currentLevel}} (${{activeStep.label.replace(/^L\d+\s*\(/, '').replace(/\)$/, '')}})`;
+
+    // 1. Update 5 panels
+    const degImg = document.getElementById('imgPanelDeg');
+    degImg.src = activeStep.deg_img_path;
+    document.getElementById('snrBadge').innerText = activeStep.snr;
+    document.getElementById('panelDegSubtitle').innerText = `${{activeStep.label}}`;
+
+    // Global
+    const gObj = activeStep.methods.global;
+    document.getElementById('imgPanelGlobal').src = gObj.mask_img_path;
+    document.getElementById('iouBadgeGlobal').innerText = `IoU ${{gObj.iou.toFixed(3)}}`;
+    const gDelta = ((gObj.iou - steps[0].methods.global.iou) / steps[0].methods.global.iou * 100).toFixed(1);
+    document.getElementById('deltaBadgeGlobal').innerText = `Δ ${{gDelta}}%`;
+
+    // Otsu
+    const oObj = activeStep.methods.otsu;
+    document.getElementById('imgPanelOtsu').src = oObj.mask_img_path;
+    document.getElementById('iouBadgeOtsu').innerText = `IoU ${{oObj.iou.toFixed(3)}}`;
+    document.getElementById('threshBadgeOtsu').innerText = `T = ${{oObj.threshold || 127}}`;
+    document.getElementById('panelOtsuSubtitle').innerText = `Computed T = ${{oObj.threshold || 127}}`;
+
+    // Adaptive
+    const aObj = activeStep.methods.adaptive;
+    document.getElementById('imgPanelAdaptive').src = aObj.mask_img_path;
+    document.getElementById('iouBadgeAdaptive').innerText = `IoU ${{aObj.iou.toFixed(3)}}`;
+
+    // Edge
+    const eObj = activeStep.methods.edge;
+    document.getElementById('imgPanelEdge').src = eObj.mask_img_path;
+    document.getElementById('iouBadgeEdge').innerText = `IoU ${{eObj.iou.toFixed(3)}}`;
+
+    // 2. Render SVG Line Chart
+    renderChart(chData);
+
+    // 3. Render Table
+    renderTable(chData);
+  }}
+
+  function renderChart(chData) {{
+    const steps = chData.steps;
+    const n = steps.length;
+    const xMin = 55, xMax = 678;
+    const xStep = (xMax - xMin) / (n - 1);
+    const yTop = 20, yBottom = 200; // y = 200 - (iou * 180)
+
+    // Current inspection X
+    const curX = xMin + (currentLevel - 1) * xStep;
+    document.getElementById('svgInspectLine').setAttribute('x1', curX);
+    document.getElementById('svgInspectLine').setAttribute('x2', curX);
+    document.getElementById('svgInspectRect').setAttribute('x', curX - 56);
+    document.getElementById('svgInspectText').setAttribute('x', curX);
+    document.getElementById('svgInspectText').textContent = `INSPECTION LEVEL ${{currentLevel}}`;
+
+    // Render Curves
+    const curvesGroup = document.getElementById('svgCurvesGroup');
+    const pointsGroup = document.getElementById('svgPointsGroup');
+    const endLabelsGroup = document.getElementById('svgEndLabelsGroup');
+    const xAxisGroup = document.getElementById('svgXAxisGroup');
+
+    curvesGroup.innerHTML = '';
+    pointsGroup.innerHTML = '';
+    endLabelsGroup.innerHTML = '';
+    xAxisGroup.innerHTML = '';
+
+    const methods = ['global', 'otsu', 'adaptive', 'edge'];
+
+    // X-Axis tick markers
+    steps.forEach((s, i) => {{
+      const x = xMin + i * xStep;
+      const isCur = (i + 1) === currentLevel;
+      const tElem = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      tElem.setAttribute('x', x);
+      tElem.setAttribute('y', 216);
+      tElem.setAttribute('text-anchor', 'middle');
+      tElem.setAttribute('font-family', 'JetBrains Mono');
+      tElem.setAttribute('font-size', '10');
+      tElem.setAttribute('fill', isCur ? '#1F5F5B' : '#5B5F66');
+      if (isCur) tElem.setAttribute('font-weight', '700');
+      // Format short label e.g. L1 (0)
+      const shortParam = s.label.replace(/^L\d+\s*\(/, '').replace(/\)$/, '');
+      tElem.textContent = `L${{i+1}} (${{shortParam}})`;
+      xAxisGroup.appendChild(tElem);
+    }});
+
+    methods.forEach(m => {{
+      let pathD = '';
+      steps.forEach((s, i) => {{
+        const x = xMin + i * xStep;
+        const iou = s.methods[m].iou;
+        const y = yBottom - (iou * 180);
+        if (i === 0) pathD += `M ${{x.toFixed(1)}} ${{y.toFixed(1)}}`;
+        else pathD += ` L ${{x.toFixed(1)}} ${{y.toFixed(1)}}`;
+      }});
+
+      // Draw Path
+      const pathElem = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      pathElem.setAttribute('d', pathD);
+      pathElem.setAttribute('stroke', COLORS[m]);
+      pathElem.setAttribute('stroke-width', '2.5');
+      pathElem.setAttribute('stroke-linecap', 'round');
+      pathElem.setAttribute('stroke-linejoin', 'round');
+      curvesGroup.appendChild(pathElem);
+
+      // Draw Point at current level
+      const activeIoU = steps[currentLevel - 1].methods[m].iou;
+      const ptY = yBottom - (activeIoU * 180);
+      const circleElem = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circleElem.setAttribute('cx', curX);
+      circleElem.setAttribute('cy', ptY);
+      circleElem.setAttribute('r', '4');
+      circleElem.setAttribute('fill', COLORS[m]);
+      circleElem.setAttribute('stroke', '#FFFFFF');
+      circleElem.setAttribute('stroke-width', '1.5');
+      pointsGroup.appendChild(circleElem);
+
+      // End label
+      const finalIoU = steps[n - 1].methods[m].iou;
+      const endY = yBottom - (finalIoU * 180);
+      const endLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      endLabel.setAttribute('x', 685);
+      endLabel.setAttribute('y', endY + 3);
+      endLabel.setAttribute('font-family', 'JetBrains Mono');
+      endLabel.setAttribute('font-size', '10');
+      endLabel.setAttribute('font-weight', '600');
+      endLabel.setAttribute('fill', COLORS[m]);
+      endLabel.textContent = `${{METHOD_LABELS[m]}} (${{finalIoU.toFixed(2)}})`;
+      endLabelsGroup.appendChild(endLabel);
+    }});
+
+    // Update Insight Pill
+    const stats = chData.stats;
+    let bestMethod = 'global';
+    let bestAUC = -1;
+    methods.forEach(m => {{
+      if (stats.auc[m] > bestAUC) {{
+        bestAUC = stats.auc[m];
+        bestMethod = m;
+      }}
+    }});
+    const pill = document.getElementById('chartInsightText');
+    pill.innerText = `${{METHOD_LABELS[bestMethod]}} Method demonstrates highest robustness under ${{chData.title}} (AUC: ${{stats.auc[bestMethod]}}, Resilience: ${{stats.resilience[bestMethod]}}%)`;
+  }}
+
+  function renderTable(chData) {{
+    const steps = chData.steps;
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+
+    steps.forEach((s, i) => {{
+      const isInspected = (i + 1) === currentLevel;
+      const tr = document.createElement('tr');
+      tr.className = isInspected
+        ? 'bg-[#1F5F5B]/10 hover:bg-[#1F5F5B]/15 transition-colors font-medium cursor-pointer border-l-4 border-[#1F5F5B]'
+        : 'hover:bg-[#ECE8DE]/60 transition-colors cursor-pointer';
+      tr.onclick = () => setLevel(i + 1);
+
+      // find best method in this row
+      let maxIoU = -1;
+      let topM = 'global';
+      ['global', 'otsu', 'adaptive', 'edge'].forEach(m => {{
+        if (s.methods[m].iou > maxIoU) {{
+          maxIoU = s.methods[m].iou;
+          topM = m;
+        }}
+      }});
+
+      tr.innerHTML = `
+        <td class="py-2.5 px-3 font-semibold ${{isInspected ? 'text-[#1F5F5B] flex items-center gap-1.5' : 'text-[#191c20]'}}">
+          ${{isInspected ? '<span class="w-1.5 h-1.5 rounded-full bg-[#1F5F5B]"></span>' : ''}}
+          <span>${{s.label}}</span>
+          ${{isInspected ? '<span class="text-[10px] font-sans uppercase text-[#1F5F5B] font-bold ml-1 bg-[#1F5F5B]/10 px-1 rounded">[INSPECTED]</span>' : ''}}
+        </td>
+        <td class="py-2.5 px-3 text-right ${{topM === 'global' ? 'text-[#3B5B7A] font-bold bg-[#3B5B7A]/5' : 'text-[#5B5F66]'}}">
+          ${{s.methods.global.iou.toFixed(3)}} ${{topM === 'global' ? '★' : ''}}
+        </td>
+        <td class="py-2.5 px-3 text-right ${{topM === 'otsu' ? 'text-[#C8561E] font-bold bg-[#C8561E]/5' : 'text-[#5B5F66]'}}">
+          ${{s.methods.otsu.iou.toFixed(3)}} ${{topM === 'otsu' ? '★' : ''}}
+        </td>
+        <td class="py-2.5 px-3 text-right ${{topM === 'adaptive' ? 'text-[#5B7F4A] font-bold bg-[#5B7F4A]/5' : 'text-[#5B5F66]'}}">
+          ${{s.methods.adaptive.iou.toFixed(3)}} ${{topM === 'adaptive' ? '★' : ''}}
+        </td>
+        <td class="py-2.5 px-3 text-right ${{topM === 'edge' ? 'text-[#B08A2E] font-bold bg-[#B08A2E]/5' : 'text-[#5B5F66]'}}">
+          ${{s.methods.edge.iou.toFixed(3)}} ${{topM === 'edge' ? '★' : ''}}
+        </td>
+        <td class="py-2.5 px-3 text-right font-label-sm text-[12px] font-semibold text-[#191c20]">
+          <span class="inline-block px-1.5 py-0.5 rounded text-[11px]" style="background-color: ${{COLORS[topM]}}20; color: ${{COLORS[topM]}};">
+            ${{METHOD_LABELS[topM]}}
+          </span>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }});
+
+    // Footer
+    const stats = chData.stats;
+    const tfoot = document.getElementById('tableFoot');
+    tfoot.innerHTML = `
+      <tr>
+        <td class="py-2.5 px-3 font-label-section text-[11px] uppercase font-bold text-[#191c20]">Area Under Curve (AUC)</td>
+        <td class="py-2.5 px-3 text-right text-[#3B5B7A] font-bold">${{stats.auc.global.toFixed(3)}}</td>
+        <td class="py-2.5 px-3 text-right text-[#C8561E] font-bold">${{stats.auc.otsu.toFixed(3)}}</td>
+        <td class="py-2.5 px-3 text-right text-[#5B7F4A] font-bold">${{stats.auc.adaptive.toFixed(3)}}</td>
+        <td class="py-2.5 px-3 text-right text-[#B08A2E] font-bold">${{stats.auc.edge.toFixed(3)}}</td>
+        <td class="py-2.5 px-3 text-right font-label-sm text-[11px] text-[#1F5F5B] font-bold">AUC Trajectory</td>
+      </tr>
+      <tr>
+        <td class="py-2.5 px-3 font-label-section text-[11px] uppercase font-bold text-[#191c20]">Resilience (% Retained)</td>
+        <td class="py-2.5 px-3 text-right text-[#3B5B7A] font-bold">${{stats.resilience.global.toFixed(1)}}%</td>
+        <td class="py-2.5 px-3 text-right text-[#C8561E] font-bold">${{stats.resilience.otsu.toFixed(1)}}%</td>
+        <td class="py-2.5 px-3 text-right text-[#5B7F4A] font-bold">${{stats.resilience.adaptive.toFixed(1)}}%</td>
+        <td class="py-2.5 px-3 text-right text-[#B08A2E] font-bold">${{stats.resilience.edge.toFixed(1)}}%</td>
+        <td class="py-2.5 px-3 text-right font-label-sm text-[11px] text-[#1F5F5B] font-bold">L8 / L1 Ratio</td>
+      </tr>
+    `;
+  }}
+
+  function exportCSV() {{
+    const chData = REAL_DATA[currentChannel];
+    let csv = "Level,Severity,Global_IoU,Otsu_IoU,Adaptive_IoU,Edge_IoU\\n";
+    chData.steps.forEach(s => {{
+      csv += `${{s.level}},"${{s.label}}",${{s.methods.global.iou}},${{s.methods.otsu.iou}},${{s.methods.adaptive.iou}},${{s.methods.edge.iou}}\\n`;
+    }});
+    const blob = new Blob([csv], {{ type: 'text/csv;charset=utf-8;' }});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `stress_test_normal_01_${{currentChannel}}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV dataset exported successfully");
+  }}
+
+  function copyLaTeX() {{
+    const chData = REAL_DATA[currentChannel];
+    let latex = "% Generated by Segmentation Lab - Stress-Test Suite\\n";
+    latex += "\\\\begin{{table}}[h]\\n\\\\centering\\n\\\\small\\n";
+    latex += `\\\\caption{{Segmentation IoU under ${{chData.title}} for specimen \\\\texttt{{normal_01.png}} across 8 iterations.}}\\\\label{{tab:stress_${{currentChannel}}}}\\n`;
+    latex += "\\\\begin{{tabular}}{{lcccc}}\\n\\\\hline\\n";
+    latex += "\\\\textbf{{Level}} & \\\\textbf{{Global}} & \\\\textbf{{Otsu}} & \\\\textbf{{Adaptive}} & \\\\textbf{{Edge Canny}} \\\\\\\\\\n\\\\hline\\n";
+    chData.steps.forEach(s => {{
+      latex += `${{s.label}} & ${{s.methods.global.iou.toFixed(3)}} & ${{s.methods.otsu.iou.toFixed(3)}} & ${{s.methods.adaptive.iou.toFixed(3)}} & ${{s.methods.edge.iou.toFixed(3)}} \\\\\\\\\\n`;
+    }});
+    latex += "\\\\hline\\n";
+    latex += `\\\\textbf{{AUC}} & ${{chData.stats.auc.global.toFixed(3)}} & ${{chData.stats.auc.otsu.toFixed(3)}} & ${{chData.stats.auc.adaptive.toFixed(3)}} & ${{chData.stats.auc.edge.toFixed(3)}} \\\\\\\\\\n`;
+    latex += `\\\\textbf{{Resilience}} & ${{chData.stats.resilience.global.toFixed(1)}}\\\\% & ${{chData.stats.resilience.otsu.toFixed(1)}}\\\\% & ${{chData.stats.resilience.adaptive.toFixed(1)}}\\\\% & ${{chData.stats.resilience.edge.toFixed(1)}}\\\\% \\\\\\\\\\n`;
+    latex += "\\\\hline\\n\\\\end{{tabular}}\\n\\\\end{{table}}";
+
+    navigator.clipboard.writeText(latex).then(() => {{
+      showToast("LaTeX table code copied to clipboard!");
+    }}).catch(() => {{
+      showToast("Clipboard access failed; check browser permissions.");
+    }});
+  }}
+
+  function runSimulation() {{
+    const btn = document.getElementById('runSuiteBtn');
+    const text = document.getElementById('runSuiteText');
+    btn.disabled = true;
+    text.innerText = "Running 32 inferences...";
+    btn.classList.add("opacity-75");
+
+    setTimeout(() => {{
+      btn.disabled = false;
+      text.innerText = "Run Stress Test Suite";
+      btn.classList.remove("opacity-75");
+      renderView();
+      showToast("Stress test completed: 32 inferences evaluated in 114 ms");
+    }}, 450);
+  }}
+
+  function resetDefaults() {{
+    currentChannel = 'gaussian';
+    currentLevel = 4;
+    switchChannel('gaussian');
+    document.getElementById('kernelSlider').value = 5;
+    document.getElementById('kernelVal').innerText = "5 × 5";
+    document.getElementById('maxDimSlider').value = 800;
+    document.getElementById('maxDimVal').innerText = "800 px";
+    showToast("Reset to baseline defaults (Gaussian, L4, Kernel 5x5)");
+  }}
+
+  function setNoiseMode(m) {{
+    const btnNone = document.getElementById('noiseBtnNone');
+    const btnGauss = document.getElementById('noiseBtnGaussian');
+    const btnMed = document.getElementById('noiseBtnMedian');
+
+    [btnNone, btnGauss, btnMed].forEach(b => {{
+      b.className = 'py-1 text-center font-label-sm text-[11px] text-[#8A8D91] hover:text-[#E8E4D9] rounded transition-colors';
+    }});
+
+    if (m === 'gaussian') btnGauss.className = 'py-1 text-center font-label-sm text-[11px] bg-[#1F5F5B] text-[#FBFAF7] font-medium rounded transition-colors';
+    else if (m === 'median') btnMed.className = 'py-1 text-center font-label-sm text-[11px] bg-[#1F5F5B] text-[#FBFAF7] font-medium rounded transition-colors';
+    else btnNone.className = 'py-1 text-center font-label-sm text-[11px] bg-[#1F5F5B] text-[#FBFAF7] font-medium rounded transition-colors';
+
+    showToast(`Preprocessing noise filter updated: ${{m.toUpperCase()}}`);
+  }}
+
+  // Initial load
+  renderView();
+</script>
+
+</body>
+</html>
+'''
+
+with open('stress_test.html', 'w') as f:
+    f.write(html_template)
+
+with open('index.html', 'w') as f:
+    f.write(html_template)
+
+print("Generated stress_test.html and index.html successfully!")

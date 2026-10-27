@@ -93,15 +93,27 @@ def plot_degradation_curve(levels, curves: dict, x_label: str,
         "adaptive": "Adaptive",
         "edge": "Edge-Based",
     }
-    fig, ax = plt.subplots(figsize=(7, 4))
+    algo_colors = {
+        "global": "#3B5B7A",
+        "otsu": "#C8561E",
+        "adaptive": "#5B7F4A",
+        "edge": "#B08A2E",
+    }
+    fig, ax = plt.subplots(figsize=(8, 4.2), facecolor="#FBFAF7")
+    ax.set_facecolor("#FFFFFF")
     for key, ious in curves.items():
-        ax.plot(levels, ious, marker="o", linewidth=1.5, label=labels.get(key, key))
-    ax.set_xlabel(x_label)
-    ax.set_ylabel("IoU")
-    ax.set_ylim(0, 1.05)
-    ax.set_title(title)
-    ax.grid(alpha=0.3)
-    ax.legend()
+        color = algo_colors.get(key, "#1F5F5B")
+        ax.plot(levels, ious, marker="o", markersize=5, linewidth=2.2, color=color, label=f"{labels.get(key, key)} ({ious[-1]:.2f})")
+    ax.set_xlabel(x_label, fontfamily="sans-serif", fontsize=11, color="#191c20", weight="500")
+    ax.set_ylabel("Jaccard Index (IoU)", fontfamily="sans-serif", fontsize=11, color="#191c20", weight="500")
+    ax.set_ylim(-0.02, 1.05)
+    ax.set_title(title, fontfamily="serif", fontsize=13, color="#191c20", weight="600", pad=12)
+    ax.grid(color="#E4DFD2", linestyle="--", linewidth=0.8, alpha=0.8)
+    for spine in ax.spines.values():
+        spine.set_color("#D9D3C5")
+        spine.set_linewidth(1.0)
+    ax.tick_params(colors="#5B5F66", labelsize=10)
+    ax.legend(facecolor="#FBFAF7", edgecolor="#D9D3C5", fontsize=10, loc="lower left")
     fig.tight_layout()
     return fig
 
