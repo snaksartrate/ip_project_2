@@ -1,12 +1,21 @@
 """
 segmentation.py
 
-Implements four classical segmentation methods that all solve the SAME
-problem -- separating foreground objects from background in a
-preprocessed grayscale image -- under one common interface, so the
-later comparison across methods is fair: only this stage differs,
-everything before (preprocessing) and after (morphology, detection)
-stays identical regardless of which method was chosen.
+Implements five segmentation methods that all solve the SAME problem --
+separating foreground objects from background in a preprocessed grayscale
+image -- under one common interface, so the later comparison across methods
+is fair: only this stage differs, everything before (preprocessing) and
+after (morphology, detection) stays identical regardless of which method
+was chosen.
+
+Methods:
+    1. Global Thresholding   - fixed single threshold
+    2. Otsu Thresholding     - histogram-based automatic threshold
+    3. Adaptive Thresholding - local per-pixel thresholds
+    4. Edge-Based            - Canny edges + region filling
+    5. Hybrid Model          - multi-evidence fusion of all four methods
+                               using Otsu separability, adaptive evidence,
+                               and Canny edge zones with hysteresis.
 
 MASK CONVENTION (enforced by every function in this module):
     255 (white) = foreground object
@@ -499,7 +508,248 @@ def segment_edge_based(gray_image: np.ndarray, low_threshold: int = 50, high_thr
 
 
 # ---------------------------------------------------------------------------
-# 5. COMMON DISPATCHER
+# 5. HYBRID MODEL
+# ---------------------------------------------------------------------------
+
+def _otsu_separability(gray: np.ndarray, t: float) -> float:
+    """
+    Compute Otsu's between-class variance ratio (eta, 0..1) at threshold t.
+
+    This measures how cleanly the histogram splits at t: a value close to 1
+    means the two sides of the histogram are well-separated (Otsu is reliable);
+    a value close to 0 means the histogram has no clear bimodal structure at
+    that split (Otsu is unreliable and we fall back to adaptive + edge evidence).
+
+    Used by segment_hybrid() to decide how much weight to give each source of
+    evidence when fusing the four segmentation signals.
+    """
+    hist = cv2.calcHist([gray], [0], None, [256], [0, 256]).ravel()
+    hist /= hist.sum() + 1e-9
+    lv = np.arange(256, dtype=np.float32)
+    t = int(t)
+    w0 = float(hist[: t + 1].sum())
+    w1 = float(hist[t + 1 :].sum())
+    if w0 == 0 or w1 == 0:
+        return 0.0
+    mu0 = float((hist[: t + 1] * lv[: t + 1]).sum()) / w0
+    mu1 = float((hist[t + 1 :] * lv[t + 1 :]).sum()) / w1
+    mu  = float((hist * lv).sum())
+    total_var = float((hist * (lv - mu) ** 2).sum()) + 1e-9
+    return float(w0 * w1 * (mu0 - mu1) ** 2 / total_var)
+
+
+def segment_hybrid(
+    gray_image: np.ndarray,
+    object_polarity: str = "darker",
+    eta_trust: float = 0.5,
+    block_size: int = 21,
+    C: int = 8,
+    edge_band: int = 5,
+    min_seed_ratio: float = 0.0,
+    min_area_frac: float = 1e-5,
+) -> dict:
+    """
+    Hybrid Model: multi-evidence fusion of all four segmentation approaches.
+
+    Motivation — why combine methods?
+        Each of the four classical methods has a well-understood failure mode:
+          * Global/Otsu: fail on uneven illumination (no spatial adaptivity)
+          * Adaptive: fragments large uniform regions; responds to noise
+          * Edge-based: fails when object boundary gradients are weak or noisy
+        The hybrid model collects three independent "votes" from the image
+        and merges them through hysteresis on connected components, so that
+        the strengths of one method compensate for the weaknesses of another.
+
+    Algorithm (three-source hysteresis pipeline):
+        1. Feature preparation
+           The input is inverted when objects are darker (so objects are
+           always BRIGHT in the feature image). A mild CLAHE pass boosts
+           local contrast before any thresholding.
+
+        2. Evidence 1 — Otsu global threshold
+           OpenCV's cv2.threshold with THRESH_OTSU gives a global split T.
+           The Otsu separability eta (between-class variance ratio, 0-1)
+           quantifies how bimodal the histogram is at T. High eta -> Otsu
+           is trustworthy for this image.
+
+        3. Evidence 2 — Adaptive (Gaussian) threshold
+           cv2.adaptiveThreshold with a block derived from image size.
+           Always adapts to local lighting; robust when eta is low.
+
+        4. Evidence 3 — Canny edge zone
+           Canny thresholds are derived from the Otsu level (0.5*T, T).
+           A dilation of width `edge_band` pixels around each detected
+           edge marks an "edge zone": pixels here are more likely to lie
+           on or inside a real object boundary.
+
+        5. Fusion with hysteresis
+           * If Otsu is reliable (eta >= eta_trust):
+               strong seeds = Otsu & Adaptive  (both must agree)
+               weak   pool  = Otsu | Adaptive  (either may claim)
+           * Otherwise (unreliable Otsu):
+               strong seeds = Adaptive & edge_zone
+               weak   pool  = Adaptive only
+           Final seeds = strong | (weak & edge_zone)
+           Connected components of the weak pool that contain at least
+           one seed pixel are accepted; the rest are discarded. This is
+           exactly Canny's hysteresis principle applied at region level.
+
+        6. Clean-up
+           A morphological opening removes tiny isolated blobs; connected
+           components smaller than min_area_frac of the image are dropped.
+
+    Parameters:
+        gray_image      : (H, W) uint8 preprocessed grayscale image.
+        object_polarity : "darker" or "brighter". Determines whether the
+                          image is inverted before processing.
+        eta_trust       : separability threshold (0-1). Above this, Otsu
+                          evidence is included in the strong-seed stage.
+        block_size      : adaptive threshold block side (pixels, auto-
+                          adjusted to be odd and >= 3).
+        C               : constant subtracted from the local mean in the
+                          adaptive step (higher = stricter foreground).
+        edge_band       : dilation radius (px) around Canny edges used to
+                          define the "edge zone" for weak seed acceptance.
+        min_seed_ratio  : a component needs seed_count >= min_seed_ratio *
+                          component_area to be kept (0 = any seed suffices).
+        min_area_frac   : components smaller than this fraction of the
+                          total image area are removed in the final clean-up.
+
+    Returns:
+        Common result dict (see module docstring).
+        "threshold" is the Otsu-computed global threshold (informational).
+        "intermediate" contains:
+            "feature"     : CLAHE-enhanced working image (objects bright)
+            "otsu_mask"   : raw Otsu binary mask
+            "adaptive_mask": raw adaptive binary mask
+            "edges"       : Canny edge map
+            "seeds"       : accepted seed pixels (strong + edge-zone weak)
+            "weak_pool"   : full weak foreground pool before hysteresis
+            "eta"         : Otsu separability score (float)
+    """
+    block_size = _validate_odd(block_size, min_size=3, max_size=199)
+    C = int(C)
+    h, w = gray_image.shape[:2]
+
+    start = time.perf_counter()
+
+    # ------------------------------------------------------------------
+    # 1. Feature: make objects BRIGHT regardless of polarity
+    # ------------------------------------------------------------------
+    if object_polarity == "darker":
+        feature = cv2.bitwise_not(gray_image)
+    else:
+        feature = gray_image.copy()
+
+    # CLAHE boosts local contrast; important for luminance-channel thresholding
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    feature = clahe.apply(feature)
+
+    blur = cv2.GaussianBlur(feature, (5, 5), 0)
+
+    # ------------------------------------------------------------------
+    # 2. Evidence 1 — Otsu global threshold (objects bright -> THRESH_BINARY)
+    # ------------------------------------------------------------------
+    t_otsu, otsu_mask = cv2.threshold(
+        blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+    )
+    eta = _otsu_separability(blur, t_otsu)
+
+    # ------------------------------------------------------------------
+    # 3. Evidence 2 — Adaptive threshold (gaussian, objects bright)
+    # ------------------------------------------------------------------
+    adaptive_mask = cv2.adaptiveThreshold(
+        blur, 255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        block_size, -C,           # negative C: local mean - (-C) = mean + C
+    )
+
+    # ------------------------------------------------------------------
+    # 4. Evidence 3 — Canny edge zone
+    # ------------------------------------------------------------------
+    hi = max(float(t_otsu), 30.0)
+    edges = cv2.Canny(blur, int(0.5 * hi), int(hi))
+    k_edge = int(edge_band) | 1
+    edge_zone = cv2.dilate(
+        edges,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k_edge, k_edge)),
+    ) > 0
+
+    # ------------------------------------------------------------------
+    # 5. Fusion with region-level hysteresis
+    # ------------------------------------------------------------------
+    o = otsu_mask > 0
+    a = adaptive_mask > 0
+
+    if eta >= eta_trust:          # Otsu reliable: regions must agree
+        strong = o & a
+        weak   = o | a
+    else:                         # Otsu unreliable: lean on adaptive + edges
+        strong = a & edge_zone
+        weak   = a
+
+    seeds = strong | (weak & edge_zone)
+
+    # Vectorised connected-component hysteresis
+    n, labels = cv2.connectedComponents(
+        weak.astype(np.uint8), connectivity=8
+    )
+    area_counts = np.bincount(labels.ravel(), minlength=n)
+    seed_counts = np.bincount(
+        labels[seeds].ravel(), minlength=n
+    )
+    keep = (seed_counts > 0) & (
+        seed_counts >= min_seed_ratio * area_counts
+    )
+    keep[0] = False               # background label
+    mask = keep[labels].astype(np.uint8) * 255
+
+    # ------------------------------------------------------------------
+    # 6. Clean-up: opening + small-region removal
+    # ------------------------------------------------------------------
+    mask = cv2.morphologyEx(
+        mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)
+    )
+    min_area_px = max(10, int(h * w * min_area_frac))
+    n2, labels2, stats2, _ = cv2.connectedComponentsWithStats(
+        mask, connectivity=8
+    )
+    small_ids = np.flatnonzero(stats2[:, cv2.CC_STAT_AREA] < min_area_px)
+    small_ids = small_ids[small_ids > 0]
+    if len(small_ids):
+        mask[np.isin(labels2, small_ids)] = 0
+
+    elapsed_ms = (time.perf_counter() - start) * 1000
+
+    return _make_result(
+        mask=mask,
+        method="hybrid",
+        parameters={
+            "object_polarity": object_polarity,
+            "eta_trust": eta_trust,
+            "block_size": block_size,
+            "C": C,
+            "edge_band": edge_band,
+            "min_seed_ratio": min_seed_ratio,
+            "min_area_frac": min_area_frac,
+        },
+        threshold=float(t_otsu),
+        processing_time_ms=elapsed_ms,
+        intermediate={
+            "feature":       feature,
+            "otsu_mask":     otsu_mask,
+            "adaptive_mask": adaptive_mask,
+            "edges":         edges,
+            "seeds":         seeds.astype(np.uint8) * 255,
+            "weak_pool":     weak.astype(np.uint8) * 255,
+            "eta":           eta,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# 6. COMMON DISPATCHER
 # ---------------------------------------------------------------------------
 
 SEGMENTATION_METHODS: dict[str, Callable[..., dict]] = {
@@ -507,12 +757,13 @@ SEGMENTATION_METHODS: dict[str, Callable[..., dict]] = {
     "otsu": segment_otsu,
     "adaptive": segment_adaptive,
     "edge": segment_edge_based,
+    "hybrid": segment_hybrid,
 }
 
 
 def segment(gray_image: np.ndarray, method: str, **parameters) -> dict:
     """
-    Common dispatcher: run any of the four segmentation methods through
+    Common dispatcher: run any of the five segmentation methods through
     a single call site, so callers (the Streamlit app, and later the
     comparison engine) don't need method-specific branching logic.
 
@@ -520,7 +771,7 @@ def segment(gray_image: np.ndarray, method: str, **parameters) -> dict:
         gray_image: (H, W) uint8 preprocessed grayscale image -- the
             SAME preprocessed image must be supplied regardless of
             method, so only the segmentation strategy varies.
-        method: one of "global", "otsu", "adaptive", "edge".
+        method: one of "global", "otsu", "adaptive", "edge", "hybrid".
         **parameters: forwarded to the corresponding segment_*() function.
 
     Returns:

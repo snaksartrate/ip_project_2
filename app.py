@@ -43,6 +43,7 @@ METHOD_LABELS = {
     "Otsu Thresholding": "otsu",
     "Adaptive Thresholding": "adaptive",
     "Edge-Based Segmentation": "edge",
+    "Hybrid Model": "hybrid",
 }
 
 SHORT_LABELS = {
@@ -50,6 +51,7 @@ SHORT_LABELS = {
     "otsu": "Otsu",
     "adaptive": "Adaptive",
     "edge": "Edge-Based",
+    "hybrid": "Hybrid",
 }
 
 # Per-degradation UI configuration.
@@ -1217,8 +1219,369 @@ def render_measure_tab():
 
 
 # ---------------------------------------------------------------------------
-# TAB 6: benchmark on the synthetic dataset
+# TAB 7: Hybrid Model
 # ---------------------------------------------------------------------------
+
+def render_hybrid_tab():
+    # ---- Header banner -------------------------------------------------------
+    st.markdown("""
+    <div style="background-color:#FBFAF7; border:1px solid #D9D3C5; border-radius:6px;
+                padding:14px 18px; margin-bottom:18px; box-shadow:0 1px 2px rgba(28,31,35,.04);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:700;
+                      text-transform:uppercase; color:#5B5F66; letter-spacing:.08em;">Fusion Engine</div>
+          <div style="font-family:'Source Serif 4',serif; font-size:20px; font-weight:600;
+                      color:#191c20; margin-top:2px;">Hybrid Segmentation Model</div>
+          <div style="font-family:'IBM Plex Sans',sans-serif; font-size:12px; color:#5B5F66; margin-top:4px;">
+            Combines Otsu global threshold, adaptive local threshold, and Canny edge zones
+            through region-level hysteresis to produce a single fused foreground mask.
+          </div>
+        </div>
+        <div style="background-color:rgba(31,95,91,.1); border:1px solid rgba(31,95,91,.2);
+                    padding:8px 14px; border-radius:4px; text-align:center;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#1F5F5B; font-weight:700;">METHOD</div>
+          <div style="font-family:'Source Serif 4',serif; font-size:16px; color:#1F5F5B; font-weight:600;">HYBRID v2</div>
+        </div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    gray = result["filtered"]
+
+    # ---- Sidebar-style parameter panel ---------------------------------------
+    with st.expander("⚙️ Hybrid Model Parameters", expanded=True):
+        col_p1, col_p2, col_p3 = st.columns(3)
+        with col_p1:
+            hyb_polarity_label = st.radio(
+                "Object polarity",
+                ["Objects darker than background", "Objects brighter than background"],
+                index=0, key="hyb_polarity",
+            )
+            hyb_polarity = "darker" if "darker" in hyb_polarity_label else "brighter"
+
+            eta_trust = st.slider(
+                "Otsu trust threshold (η)",
+                min_value=0.0, max_value=1.0, value=0.5, step=0.05,
+                key="hyb_eta",
+                help="Otsu separability score (0–1). Above this value, Otsu evidence "
+                     "is included in the strong-seed stage. Below it, the model falls "
+                     "back to adaptive + edges only.",
+            )
+
+        with col_p2:
+            hyb_block = st.slider(
+                "Adaptive block size",
+                min_value=3, max_value=99, value=21, step=2, key="hyb_block",
+                help="Neighborhood side length for the adaptive threshold stage (must be odd).",
+            )
+            hyb_C = st.slider(
+                "Adaptive constant C",
+                min_value=1, max_value=30, value=8, key="hyb_C",
+                help="Subtracted from the local Gaussian-weighted mean. Higher = stricter foreground.",
+            )
+
+        with col_p3:
+            hyb_edge_band = st.slider(
+                "Edge-zone dilation (px)",
+                min_value=1, max_value=21, value=5, step=2, key="hyb_edge_band",
+                help="How many pixels around each Canny edge count as an 'edge zone' for weak-seed acceptance.",
+            )
+            hyb_min_seed = st.slider(
+                "Min seed ratio",
+                min_value=0.0, max_value=0.5, value=0.0, step=0.01, key="hyb_seed_ratio",
+                help="A connected component must have at least this fraction of its pixels as seeds to be kept.",
+            )
+
+    run_hybrid = st.button("▶ Run Hybrid Segmentation", type="primary", key="run_hybrid")
+
+    if not run_hybrid and "hybrid_result" not in st.session_state:
+        st.info("Configure the parameters above and click **▶ Run Hybrid Segmentation**.")
+        return
+
+    if run_hybrid:
+        hyb_seg = segmentation.segment_hybrid(
+            gray,
+            object_polarity=hyb_polarity,
+            eta_trust=eta_trust,
+            block_size=hyb_block,
+            C=hyb_C,
+            edge_band=hyb_edge_band,
+            min_seed_ratio=hyb_min_seed,
+        )
+        st.session_state["hybrid_result"] = {
+            "seg": hyb_seg,
+            "polarity": hyb_polarity,
+            "params": dict(
+                eta_trust=eta_trust, block_size=hyb_block,
+                C=hyb_C, edge_band=hyb_edge_band, min_seed_ratio=hyb_min_seed,
+            ),
+        }
+
+    stored = st.session_state.get("hybrid_result")
+    if stored is None:
+        return
+
+    hyb_seg = stored["seg"]
+    inter   = hyb_seg["intermediate"]
+    eta_val = inter["eta"]
+    t_otsu  = hyb_seg["threshold"]
+    otsu_trusted = eta_val >= stored["params"]["eta_trust"]
+
+    # ---- Otsu reliability badge ------------------------------------------
+    badge_color = "#1F5F5B" if otsu_trusted else "#B08A2E"
+    badge_text  = "OTSU TRUSTED" if otsu_trusted else "OTSU IGNORED"
+    badge_bg    = "rgba(31,95,91,.1)" if otsu_trusted else "rgba(176,138,46,.12)"
+    badge_border = "rgba(31,95,91,.3)" if otsu_trusted else "rgba(176,138,46,.4)"    
+    st.markdown(f"""
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;">
+      <div style="background:{badge_bg}; border:1px solid {badge_border}; border-radius:5px;
+                  padding:10px 18px; font-family:'JetBrains Mono',monospace; font-size:12px; color:{badge_color};">
+        <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+                     display:block; margin-bottom:2px;">Otsu Reliability (η)</span>
+        <span style="font-size:22px; font-weight:700;">{eta_val:.3f}</span>
+        &nbsp;<span style="font-size:11px; border:1px solid {badge_border}; padding:2px 6px;
+                           border-radius:3px;">{badge_text}</span>
+      </div>
+      <div style="background:#F4F1EA; border:1px solid #D9D3C5; border-radius:5px;
+                  padding:10px 18px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#5B5F66;">
+        <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+                     display:block; margin-bottom:2px;">Otsu Global Threshold (T)</span>
+        <span style="font-size:22px; font-weight:700; color:#191c20;">{t_otsu:.0f}</span>
+      </div>
+      <div style="background:#F4F1EA; border:1px solid #D9D3C5; border-radius:5px;
+                  padding:10px 18px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#5B5F66;">
+        <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+                     display:block; margin-bottom:2px;">Processing Time</span>
+        <span style="font-size:22px; font-weight:700; color:#191c20;">{hyb_seg['processing_time_ms']:.1f} ms</span>
+      </div>
+      <div style="background:#F4F1EA; border:1px solid #D9D3C5; border-radius:5px;
+                  padding:10px 18px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#5B5F66;">
+        <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+                     display:block; margin-bottom:2px;">Foreground Coverage</span>
+        <span style="font-size:22px; font-weight:700; color:#191c20;">{100.0*np.count_nonzero(hyb_seg['mask'])/hyb_seg['mask'].size:.1f}%</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ---- Fusion pipeline strip -------------------------------------------
+    st.markdown("""
+    <div style="background:#FBFAF7; border:1px solid #D9D3C5; border-radius:6px;
+                padding:12px 16px; margin-bottom:12px;">
+      <div style="font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:700;
+                  text-transform:uppercase; color:#5B5F66; letter-spacing:.08em; margin-bottom:8px;">Fusion Pipeline — Intermediate Stages</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    stage_cols = st.columns(6)
+    stages = [
+        ("Input (preprocessed)",    gray),
+        ("Feature\n(CLAHE + invert)",inter["feature"]),
+        ("Evidence 1\nOtsu mask",   inter["otsu_mask"]),
+        ("Evidence 2\nAdaptive mask",inter["adaptive_mask"]),
+        ("Evidence 3\nEdge map",     inter["edges"]),
+        ("Fused Mask\n(final)",      hyb_seg["mask"]),
+    ]
+    stage_colors = ["#4B5563", "#374151", "#3B5B7A", "#5B7F4A", "#B08A2E", "#1F5F5B"]
+    for col, (caption, img), color in zip(stage_cols, stages, stage_colors):
+        with col:
+            st.markdown(f"<div style='background:{color}; color:#FBFAF7; padding:3px 6px;"
+                        f"border-radius:4px 4px 0 0; font-size:9px; font-weight:700;"
+                        f"font-family:monospace; text-transform:uppercase; white-space:pre;'>{caption}</div>",
+                        unsafe_allow_html=True)
+            st.image(img, use_container_width=True)
+
+    # ---- Seed / weak pool detail -----------------------------------------
+    with st.expander("🔍 Hysteresis Detail — Seeds & Weak Pool", expanded=False):
+        scols = st.columns(3)
+        with scols[0]:
+            st.image(inter["weak_pool"],
+                     caption="Weak pool (union / adaptive only)",
+                     use_container_width=True)
+        with scols[1]:
+            st.image(inter["seeds"],
+                     caption="Accepted seeds (strong + edge-zone weak)",
+                     use_container_width=True)
+        with scols[2]:
+            st.image(hyb_seg["mask"],
+                     caption="Final fused mask (hysteresis output)",
+                     use_container_width=True)
+        st.caption(
+            "**Weak pool**: either Otsu or Adaptive claims the pixel (or Adaptive only when "
+            "η < η-trust). **Seeds**: pixels that both evidence layers agree on, or weak pixels "
+            "that fall inside a Canny edge zone. Only connected components of the weak pool that "
+            "contain at least one seed pixel survive into the final mask."
+        )
+
+    st.divider()
+
+    # ---- Comparison against the four classical methods -------------------
+    st.markdown("""
+    <div style="background:#FBFAF7; border:1px solid #D9D3C5; border-radius:6px;
+                padding:12px 16px; margin-bottom:12px;">
+      <div style="font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:700;
+                  text-transform:uppercase; color:#5B5F66; letter-spacing:.08em; margin-bottom:4px;">Head-to-Head Comparison</div>
+      <div style="font-family:'Source Serif 4',serif; font-size:17px; font-weight:600; color:#191c20;">Hybrid vs. Classical Methods</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    classical_params = {
+        "global":   {"threshold": 127, "object_polarity": stored["polarity"]},
+        "otsu":     {"object_polarity": stored["polarity"]},
+        "adaptive": {"block_size": 11, "C": 2, "adaptive_method": "gaussian",
+                     "object_polarity": stored["polarity"]},
+        "edge":     {"low_threshold": 50, "high_threshold": 150, "closing_kernel_size": 5},
+    }
+    classical_colors = {
+        "global":   "#3B5B7A",
+        "otsu":     "#C8561E",
+        "adaptive": "#5B7F4A",
+        "edge":     "#B08A2E",
+    }
+
+    all_masks = {"hybrid": hyb_seg["mask"]}
+    comp_summary = []
+    for key, p in classical_params.items():
+        seg = segmentation.segment(gray, key, **p)
+        all_masks[key] = seg["mask"]
+        row = {
+            "Method": SHORT_LABELS[key],
+            "Foreground (%)": round(100.0 * np.count_nonzero(seg["mask"]) / seg["mask"].size, 1),
+            "Time (ms)": round(seg["processing_time_ms"], 2),
+        }
+        if gt_mask is not None:
+            row["IoU vs GT"] = round(evaluation.calculate_iou(seg["mask"], gt_mask), 4)
+        comp_summary.append(row)
+
+    hyb_row = {
+        "Method": "Hybrid ★",
+        "Foreground (%)": round(100.0 * np.count_nonzero(hyb_seg["mask"]) / hyb_seg["mask"].size, 1),
+        "Time (ms)": round(hyb_seg["processing_time_ms"], 2),
+    }
+    if gt_mask is not None:
+        hyb_iou = evaluation.calculate_iou(hyb_seg["mask"], gt_mask)
+        hyb_row["IoU vs GT"] = round(hyb_iou, 4)
+    comp_summary.insert(0, hyb_row)
+
+    # Mask grid
+    mask_cols = st.columns(5)
+    display_order = [("Hybrid ★", "#1F5F5B", hyb_seg["mask"])] + [
+        (SHORT_LABELS[k], classical_colors[k], all_masks[k]) for k in classical_params
+    ]
+    for col, (lbl, color, msk) in zip(mask_cols, display_order):
+        with col:
+            st.markdown(
+                f"<div style='background:{color}; color:#FBFAF7; padding:4px 8px;"
+                f"border-radius:4px 4px 0 0; font-size:10px; font-weight:700;"
+                f"font-family:monospace; text-transform:uppercase;'>{lbl}</div>",
+                unsafe_allow_html=True,
+            )
+            st.image(msk, use_container_width=True)
+
+    # Summary table
+    st.dataframe(pd.DataFrame(comp_summary), hide_index=True, use_container_width=True)
+    if gt_mask is None:
+        st.caption("Add a ground-truth mask in the **Ground Truth & Polarity** section above to see IoU scores.")
+    elif gt_source == "pseudo (Otsu)":
+        st.caption("IoU is measured against Otsu's output (pseudo ground truth) — favours Otsu.")
+
+    st.divider()
+
+    # ---- Morphology + detection on hybrid mask ---------------------------
+    st.markdown("""
+    <div style="background:#FBFAF7; border:1px solid #D9D3C5; border-radius:6px;
+                padding:12px 16px; margin-bottom:12px;">
+      <div style="font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:700;
+                  text-transform:uppercase; color:#5B5F66; letter-spacing:.08em; margin-bottom:4px;">Post-Processing</div>
+      <div style="font-family:'Source Serif 4',serif; font-size:17px; font-weight:600; color:#191c20;">Morphology, Detection & Measurements</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    mc1, mc2, mc3 = st.columns(3)
+    with mc1:
+        hyb_open_k  = st.slider("Opening kernel",  1, 15, 3, step=2, key="hyb_open")
+    with mc2:
+        hyb_close_k = st.slider("Closing kernel",  1, 25, 5, step=2, key="hyb_close")
+    with mc3:
+        hyb_min_area = st.slider("Min object area (px)", 1, 2000, 50, key="hyb_min_area")
+
+    from src import morphology, detection, features
+    cleaned = morphology.clean_mask(
+        hyb_seg["mask"],
+        open_kernel_size=hyb_open_k,
+        close_kernel_size=hyb_close_k,
+        min_area=hyb_min_area,
+    )
+    objects  = detection.detect_objects(cleaned["final"], min_area=hyb_min_area)
+    feat_tbl = features.compute_all_features(objects)
+    overlay  = visualization.draw_detections(result["resized"], objects)
+
+    det_cols = st.columns(4)
+    with det_cols[0]:
+        st.image(hyb_seg["mask"], caption="Raw hybrid mask", use_container_width=True)
+    with det_cols[1]:
+        st.image(cleaned["opened"], caption="After opening", use_container_width=True)
+    with det_cols[2]:
+        st.image(cleaned["final"], caption="After closing + small-region removal", use_container_width=True)
+    with det_cols[3]:
+        st.image(overlay[:, :, ::-1],
+                 caption=f"Detections: {len(objects)} object(s)",
+                 use_container_width=True)
+
+    if gt_mask is not None:
+        iou_raw     = evaluation.calculate_iou(hyb_seg["mask"], gt_mask)
+        iou_cleaned = evaluation.calculate_iou(cleaned["final"], gt_mask)
+        st.markdown(
+            f"<div style='font-family:JetBrains Mono,monospace; font-size:12px; color:#5B5F66; margin:6px 0;'>"
+            f"IoU raw mask: <b style='color:#191c20'>{iou_raw:.4f}</b> &nbsp;|&nbsp; "
+            f"IoU cleaned mask: <b style='color:#1F5F5B'>{iou_cleaned:.4f}</b></div>",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("**Measurements (pixels)**")
+    if len(feat_tbl) == 0:
+        st.write("No objects detected with the current settings.")
+    else:
+        st.dataframe(feat_tbl, hide_index=True)
+        st.download_button(
+            "⬇ Download measurements (CSV)",
+            feat_tbl.to_csv(index=False).encode("utf-8"),
+            file_name="measurements_hybrid.csv",
+            mime="text/csv",
+            key="hyb_download",
+        )
+
+    # ---- Algorithm explainer --------------------------------------------
+    with st.expander("📖 How the Hybrid Model works", expanded=False):
+        st.markdown("""
+**Three-source evidence fusion with region-level hysteresis**
+
+The Hybrid Model gathers evidence from three independent sources, then fuses
+them using the same hysteresis principle Canny uses for edges — but applied
+at connected-component level.
+
+| Stage | What it does | Failure mode it avoids |
+|-------|-------------|------------------------|
+| **Otsu** | Finds the globally optimal threshold T that maximises between-class variance (η) | Fails on uneven illumination |
+| **Adaptive** | Computes a per-pixel local threshold from a Gaussian-weighted neighbourhood | Fragments large uniform regions |
+| **Canny edge zone** | Marks pixels within *edge_band* px of a detected edge | Provides spatial boundary anchoring |
+
+**Fusion logic (hysteresis):**
+- If **η ≥ η_trust** (Otsu histogram is bimodal, Otsu is reliable):
+  - *Strong seeds* = Otsu **AND** Adaptive (both agree → confident foreground)
+  - *Weak pool* = Otsu **OR** Adaptive (either claims → candidate region)
+- If **η < η_trust** (Otsu is unreliable, e.g. uneven lighting):
+  - *Strong seeds* = Adaptive **AND** edge_zone
+  - *Weak pool* = Adaptive only
+- **Final seeds** = strong ∪ (weak ∩ edge_zone)
+- Any connected component in the weak pool that contains **at least one seed** pixel is kept. Others are discarded.
+
+This means the Hybrid mask is never noisier than the weakest individual
+method, yet it recovers regions the strictest method would have missed,
+as long as at least one independent source provides a confident vote.
+        """)
+
+
 
 def render_benchmark_tab():
     st.subheader("Benchmark on the synthetic dataset")
@@ -1315,9 +1678,9 @@ def render_benchmark_tab():
 # Tabs
 # ---------------------------------------------------------------------------
 
-tab_pipeline, tab_stress, tab_tuning, tab_profile, tab_measure, tab_bench = st.tabs(
+tab_pipeline, tab_stress, tab_tuning, tab_profile, tab_measure, tab_bench, tab_hybrid = st.tabs(
     ["Pipeline", "Stress-Test", "Auto-Tuning", "Hardware Profile",
-     "Measurements", "Benchmark"]
+     "Measurements", "Benchmark", "Hybrid Model"]
 )
 
 with tab_pipeline:
@@ -1332,3 +1695,5 @@ with tab_measure:
     render_measure_tab()
 with tab_bench:
     render_benchmark_tab()
+with tab_hybrid:
+    render_hybrid_tab()
