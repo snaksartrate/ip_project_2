@@ -206,12 +206,14 @@ def profile_all_methods(gray_image: np.ndarray,
                      "object_polarity": "darker"},
         "edge": {"low_threshold": 50, "high_threshold": 150,
                  "closing_kernel_size": 5},
+        "hybrid": {"object_polarity": "darker"},
     }
     labels = {
         "global": "Global Thresholding",
         "otsu": "Otsu Thresholding",
         "adaptive": "Adaptive Thresholding",
         "edge": "Edge-Based Segmentation",
+        "hybrid": "Hybrid Model",
     }
     method_params = method_params or {}
     height, width = gray_image.shape[:2]

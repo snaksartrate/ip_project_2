@@ -41,7 +41,7 @@ import pandas as pd
 from src import visualization
 
 
-METHODS = ["global", "otsu", "adaptive", "edge"]
+METHODS = ["global", "otsu", "adaptive", "edge", "hybrid"]
 CONDITIONS = ["normal", "noisy", "uneven", "touching"]
 
 METRICS = ["count_accuracy", "mask_iou", "raw_mask_iou", "mean_iou",

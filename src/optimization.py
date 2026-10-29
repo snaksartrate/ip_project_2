@@ -228,3 +228,89 @@ def grid_search_edge(image: np.ndarray, ground_truth_mask: np.ndarray,
         "results": results,
         "n_combinations": total,
     }
+
+
+# ---------------------------------------------------------------------------
+# 3. HYBRID MODEL GRID SEARCH
+# ---------------------------------------------------------------------------
+
+HYBRID_ETA_TRUST_VALUES = [0.3, 0.4, 0.5, 0.6, 0.7]
+HYBRID_BLOCK_SIZES = [11, 21, 31]
+HYBRID_C_VALUES = [4, 8, 12]
+HYBRID_EDGE_BANDS = [3, 5]
+
+
+def grid_search_hybrid(image: np.ndarray, ground_truth_mask: np.ndarray,
+                       object_polarity: str = "darker",
+                       eta_trust_values: Optional[list] = None,
+                       block_sizes: Optional[list] = None,
+                       c_values: Optional[list] = None,
+                       edge_bands: Optional[list] = None,
+                       progress_callback: Optional[Callable[[float], None]] = None) -> dict:
+    """
+    Find the (eta_trust, block_size, C, edge_band) combination that
+    maximizes IoU for the Hybrid Multi-Evidence Fusion Model.
+    """
+    etas = eta_trust_values or HYBRID_ETA_TRUST_VALUES
+    blocks = block_sizes or HYBRID_BLOCK_SIZES
+    cs = c_values or HYBRID_C_VALUES
+    bands = edge_bands or HYBRID_EDGE_BANDS
+
+    combinations = [
+        (eta, b, c, band)
+        for eta in etas
+        for b in blocks
+        for c in cs
+        for band in bands
+    ]
+    total = len(combinations)
+    done = 0
+
+    best_iou = -1.0
+    best_eta = None
+    best_b = None
+    best_c = None
+    best_band = None
+    best_mask = None
+    results = []
+
+    for eta, b, c, band in combinations:
+        seg = segmentation.segment_hybrid(
+            image,
+            object_polarity=object_polarity,
+            eta_trust=eta,
+            block_size=b,
+            C=c,
+            edge_band=band,
+        )
+        iou = evaluation.calculate_iou(seg["mask"], ground_truth_mask)
+        results.append({
+            "eta_trust": eta,
+            "block_size": b,
+            "C": c,
+            "edge_band": band,
+            "iou": round(iou, 4),
+        })
+
+        if iou > best_iou:
+            best_iou = iou
+            best_eta = eta
+            best_b = b
+            best_c = c
+            best_band = band
+            best_mask = seg["mask"]
+
+        done += 1
+        _report(progress_callback, done, total)
+
+    return {
+        "method": "hybrid",
+        "best_eta_trust": best_eta,
+        "best_block_size": best_b,
+        "best_C": best_c,
+        "best_edge_band": best_band,
+        "best_iou": best_iou,
+        "best_mask": best_mask,
+        "results": results,
+        "n_combinations": total,
+    }

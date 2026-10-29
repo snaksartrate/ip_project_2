@@ -42,7 +42,7 @@ import pandas as pd
 from src import preprocessing, segmentation, morphology, detection, evaluation
 
 
-METHOD_KEYS = ("global", "otsu", "adaptive", "edge")
+METHOD_KEYS = ("global", "otsu", "adaptive", "edge", "hybrid")
 
 COLUMNS = [
     "filename", "condition", "method",
@@ -112,13 +112,14 @@ def load_dataset(dataset_dir: Path) -> list:
 # ---------------------------------------------------------------------------
 
 def method_params(global_threshold: int, polarity: str) -> dict:
-    """Default parameters for the four methods (same for every image)."""
+    """Default parameters for the five methods (same for every image)."""
     return {
         "global": {"threshold": global_threshold, "object_polarity": polarity},
         "otsu": {"object_polarity": polarity},
         "adaptive": {"block_size": 11, "C": 2, "adaptive_method": "gaussian",
                      "object_polarity": polarity},
         "edge": {"low_threshold": 50, "high_threshold": 150, "closing_kernel_size": 5},
+        "hybrid": {"object_polarity": polarity},
     }
 
 

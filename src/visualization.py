@@ -92,12 +92,14 @@ def plot_degradation_curve(levels, curves: dict, x_label: str,
         "otsu": "Otsu",
         "adaptive": "Adaptive",
         "edge": "Edge-Based",
+        "hybrid": "Hybrid",
     }
     algo_colors = {
         "global": "#3B5B7A",
         "otsu": "#C8561E",
         "adaptive": "#5B7F4A",
         "edge": "#B08A2E",
+        "hybrid": "#7B1FA2",
     }
     fig, ax = plt.subplots(figsize=(8, 4.2), facecolor="#FBFAF7")
     ax.set_facecolor("#FFFFFF")
@@ -161,11 +163,13 @@ def draw_detections(image: np.ndarray, objects: list, draw_ids: bool = True) -> 
 # Phase 7: benchmark comparison charts
 # ---------------------------------------------------------------------------
 
-_METHOD_ORDER = ["global", "otsu", "adaptive", "edge"]
+_METHOD_ORDER = ["global", "otsu", "adaptive", "edge", "hybrid"]
 _METHOD_LABELS = {"global": "Global", "otsu": "Otsu",
-                  "adaptive": "Adaptive", "edge": "Edge-Based"}
+                  "adaptive": "Adaptive", "edge": "Edge-Based",
+                  "hybrid": "Hybrid"}
 _METHOD_COLORS = {"global": "#4C72B0", "otsu": "#55A868",
-                  "adaptive": "#DD8452", "edge": "#C44E52"}
+                  "adaptive": "#DD8452", "edge": "#C44E52",
+                  "hybrid": "#9467BD"}
 _CONDITION_ORDER = ["normal", "noisy", "uneven", "touching"]
 _UNIT_INTERVAL_METRICS = {"count_accuracy", "mean_iou", "mask_iou", "raw_mask_iou"}
 

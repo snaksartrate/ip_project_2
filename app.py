@@ -111,13 +111,14 @@ def _build_levels(kind, max_level, n_steps):
 
 
 def _method_params(global_threshold, polarity):
-    """Default parameters for all four methods (same for every level)."""
+    """Default parameters for all five methods (same for every level)."""
     return {
         "global": {"threshold": global_threshold, "object_polarity": polarity},
         "otsu": {"object_polarity": polarity},
         "adaptive": {"block_size": 11, "C": 2, "adaptive_method": "gaussian",
                      "object_polarity": polarity},
         "edge": {"low_threshold": 50, "high_threshold": 150, "closing_kernel_size": 5},
+        "hybrid": {"object_polarity": polarity},
     }
 
 
@@ -818,23 +819,23 @@ def render_stress_tab():
 
         run_btn = st.button("▶ Run Stress Test Suite", type="primary", key="run_stress", use_container_width=True)
 
-        st.markdown("""
+        st.markdown(f"""
         <div style="margin-top: 14px; padding: 10px; background-color: #ECE8DE; border: 1px solid #D9D3C5; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
           <div style="display: flex; justify-content: space-between; font-weight: 600; color: #5B5F66; text-transform: uppercase;">
             <span>Simulation Cost</span>
-            <span style="color: #1F5F5B;">32 INFERENCES</span>
+            <span style="color: #1F5F5B;">{n_steps * 5} INFERENCES</span>
           </div>
-          <div style="color: #191c20; margin-top: 2px;">Matrix: 8 levels × 4 algorithms</div>
+          <div style="color: #191c20; margin-top: 2px;">Matrix: {n_steps} levels × 5 algorithms</div>
           <div style="display: flex; justify-content: space-between; color: #5B5F66; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(217,211,197,0.8);">
             <span>Estimated Latency:</span>
-            <span style="color: #191c20; font-weight: 600;">~118 ms</span>
+            <span style="color: #191c20; font-weight: 600;">~150 ms</span>
           </div>
         </div>
         """, unsafe_allow_html=True)
 
         heuristic_desc = {
-            "Gaussian noise": "Gaussian noise perturbs intensities pixel-wise: Global threshold degrades gracefully until noise crosses T=127; Otsu calculates adaptive bimodal minimums; Canny edge detection suffers high false-positive gradients once σ > 15.",
-            "Low light (gamma)": "Low light (gamma) monotonically compresses dynamic range toward 0: Fixed Global Threshold (T=127) catastrophically collapses as all pixels fall below 127; Otsu dynamically recalibrates threshold down to preserve ~95% IoU.",
+            "Gaussian noise": "Gaussian noise perturbs intensities pixel-wise: Global threshold degrades gracefully until noise crosses T=127; Otsu calculates adaptive bimodal minimums; Canny edge detection suffers high false-positive gradients once σ > 15; Hybrid model uses hysteresis seeds to suppress spurious gradients.",
+            "Low light (gamma)": "Low light (gamma) monotonically compresses dynamic range toward 0: Fixed Global Threshold (T=127) catastrophically collapses as all pixels fall below 127; Otsu dynamically recalibrates threshold down to preserve ~95% IoU; Hybrid tracks adaptive evidence.",
             "Motion blur": "Motion blur attenuates high-frequency boundaries along vector angle: Edge Canny fails rapidly due to perimeter smearing; Otsu and Global maintain robust object detection as total area integral is conserved.",
         }
 
@@ -878,13 +879,13 @@ def render_stress_tab():
         degraded = _apply_degradation(gray, kind, preview_level, angle, NOISE_SEED)
         params = _method_params(global_t, polarity)
 
-        cols = st.columns(5)
+        cols = st.columns(len(params) + 1)
         with cols[0]:
             st.markdown("<div style='background-color:#1C1F23; color:#E8E4D9; padding:4px 8px; border-radius:4px 4px 0 0; font-size:10px; font-weight:600; font-family:sans-serif; text-transform:uppercase;'>Perturbed Source</div>", unsafe_allow_html=True)
             st.image(degraded, use_container_width=True)
             st.markdown(f"<div style='font-family:monospace; font-size:11px; color:#5B5F66; text-align:center;'>Level {preview_level}</div>", unsafe_allow_html=True)
 
-        algo_colors = {"global": "#3B5B7A", "otsu": "#C8561E", "adaptive": "#5B7F4A", "edge": "#B08A2E"}
+        algo_colors = {"global": "#3B5B7A", "otsu": "#C8561E", "adaptive": "#5B7F4A", "edge": "#B08A2E", "hybrid": "#7B1FA2"}
 
         for col, key in zip(cols[1:], params.keys()):
             seg = segmentation.segment(degraded, key, **params[key])
@@ -900,7 +901,7 @@ def render_stress_tab():
         st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
         if run_btn:
             levels = _build_levels(kind, max_level, n_steps)
-            with st.spinner(f"Running {len(levels)} levels × 4 methods..."):
+            with st.spinner(f"Running {len(levels)} levels × {len(params)} methods..."):
                 curves = cached_stress_sweep(
                     gray, gt_mask, kind, levels, angle, NOISE_SEED, polarity, global_t
                 )
@@ -988,8 +989,9 @@ def render_tuning_tab():
     st.write(
         "Tries every parameter combination in a fixed range and keeps the one "
         "with the highest IoU, removing human slider bias. "
-        "Adaptive: 15 block sizes x 21 values of C = 315 runs. "
-        "Edge-based: 5 low x 4 high Canny thresholds = 20 runs."
+        "Adaptive: 15 block sizes × 21 values of C = 315 runs. "
+        "Edge-based: 5 low × 4 high Canny thresholds = 20 runs. "
+        "Hybrid Model: 5 eta × 3 block × 3 C × 2 edge bands = 90 runs."
     )
 
     if gt_mask is None:
@@ -1022,9 +1024,15 @@ def render_tuning_tab():
             gray, gt_mask, closing_kernel_size=closing,
             progress_callback=lambda f: bar_e.progress(f, text="Edge-based grid search"),
         )
+        bar_h = st.progress(0.0, text="Hybrid model grid search (90 combinations)")
+        hy = optimization.grid_search_hybrid(
+            gray, gt_mask, object_polarity=polarity,
+            progress_callback=lambda f: bar_h.progress(f, text="Hybrid model grid search"),
+        )
         bar_a.empty()
         bar_e.empty()
-        st.session_state["tuning"] = {"signature": signature, "adaptive": ad, "edge": ed}
+        bar_h.empty()
+        st.session_state["tuning"] = {"signature": signature, "adaptive": ad, "edge": ed, "hybrid": hy}
 
     stored = st.session_state.get("tuning")
     if stored is None:
@@ -1036,30 +1044,39 @@ def render_tuning_tab():
         return
 
     ad, ed = stored["adaptive"], stored["edge"]
+    hy = stored.get("hybrid")
 
     st.markdown("#### Optimal parameters")
-    st.dataframe(
-        pd.DataFrame([
-            {"Method": "Adaptive Thresholding",
-             "Optimal parameters": f"block_size={ad['best_block_size']}, C={ad['best_C']}",
-             "Max IoU": round(ad["best_iou"], 4),
-             "Combinations tried": ad["n_combinations"]},
-            {"Method": "Edge-Based Segmentation",
-             "Optimal parameters": f"low={ed['best_low_threshold']}, high={ed['best_high_threshold']}",
-             "Max IoU": round(ed["best_iou"], 4),
-             "Combinations tried": ed["n_combinations"]},
-        ]),
-        hide_index=True,
-    )
+    rows_summary = [
+        {"Method": "Adaptive Thresholding",
+         "Optimal parameters": f"block_size={ad['best_block_size']}, C={ad['best_C']}",
+         "Max IoU": round(ad["best_iou"], 4),
+         "Combinations tried": ad["n_combinations"]},
+        {"Method": "Edge-Based Segmentation",
+         "Optimal parameters": f"low={ed['best_low_threshold']}, high={ed['best_high_threshold']}",
+         "Max IoU": round(ed["best_iou"], 4),
+         "Combinations tried": ed["n_combinations"]},
+    ]
+    if hy is not None:
+        rows_summary.append({
+            "Method": "Hybrid Model",
+            "Optimal parameters": f"eta_trust={hy['best_eta_trust']}, block_size={hy['best_block_size']}, C={hy['best_C']}, edge_band={hy['best_edge_band']}",
+            "Max IoU": round(hy["best_iou"], 4),
+            "Combinations tried": hy["n_combinations"]
+        })
+    st.dataframe(pd.DataFrame(rows_summary), hide_index=True)
 
     st.markdown("#### Masks at the optimum")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.image(gt_mask, caption="Ground truth", width=300)
-    with c2:
-        st.image(ad["best_mask"], caption=f"Adaptive (IoU {ad['best_iou']:.3f})", width=300)
-    with c3:
-        st.image(ed["best_mask"], caption=f"Edge-based (IoU {ed['best_iou']:.3f})", width=300)
+    cols = st.columns(4 if hy is not None else 3)
+    with cols[0]:
+        st.image(gt_mask, caption="Ground truth", use_container_width=True)
+    with cols[1]:
+        st.image(ad["best_mask"], caption=f"Adaptive (IoU {ad['best_iou']:.3f})", use_container_width=True)
+    with cols[2]:
+        st.image(ed["best_mask"], caption=f"Edge-based (IoU {ed['best_iou']:.3f})", use_container_width=True)
+    if hy is not None:
+        with cols[3]:
+            st.image(hy["best_mask"], caption=f"Hybrid (IoU {hy['best_iou']:.3f})", use_container_width=True)
 
     with st.expander("Top 10 combinations per method"):
         top_a = sorted(ad["results"], key=lambda r: r["iou"], reverse=True)[:10]
@@ -1068,6 +1085,10 @@ def render_tuning_tab():
         st.dataframe(pd.DataFrame(top_a), hide_index=True)
         st.markdown("**Edge-based**")
         st.dataframe(pd.DataFrame(top_e), hide_index=True)
+        if hy is not None:
+            top_h = sorted(hy["results"], key=lambda r: r["iou"], reverse=True)[:10]
+            st.markdown("**Hybrid Model**")
+            st.dataframe(pd.DataFrame(top_h), hide_index=True)
 
 
 # ---------------------------------------------------------------------------
@@ -1091,9 +1112,10 @@ def render_profile_tab():
             "global": {"object_polarity": polarity},
             "otsu": {"object_polarity": polarity},
             "adaptive": {"object_polarity": polarity},
+            "hybrid": {"object_polarity": polarity},
         }
         try:
-            with st.spinner("Profiling all four methods..."):
+            with st.spinner("Profiling all five methods..."):
                 rows = profiling.profile_all_methods(gray, method_params=overrides,
                                                      repeats=repeats)
             st.session_state["profile"] = {"rows": rows, "repeats": repeats}
@@ -1173,7 +1195,7 @@ def render_measure_tab():
         summary.append(row)
 
     st.markdown("#### Detections per method")
-    cols = st.columns(4)
+    cols = st.columns(len(params))
     for col, key in zip(cols, params.keys()):
         with col:
             st.image(runs[key]["overlay"][:, :, ::-1],
@@ -1608,7 +1630,7 @@ def render_benchmark_tab():
     out_name = ("benchmark_results.csv" if bench_noise == "none"
                 else f"results_{bench_noise}.csv")
     if st.button("Run benchmark", type="primary", key="bench_run"):
-        with st.spinner("Running all images x 4 methods..."):
+        with st.spinner(f"Running all images x {len(run_benchmark.METHOD_KEYS)} methods..."):
             run_benchmark.run_benchmark(DATASET_DIR, RESULTS_DIR, out_name, cfg)
         st.session_state["bench_file"] = out_name
         st.success(f"Wrote results/{out_name}")
@@ -1650,7 +1672,7 @@ def render_benchmark_tab():
     entry = next(e for e in entries if e["filename"] == name)
     rows, masks = run_benchmark.run_image(entry, cfg)
 
-    cols = st.columns(5)
+    cols = st.columns(len(run_benchmark.METHOD_KEYS) + 1)
     with cols[0]:
         st.image(entry["image"],
                  caption=f"{name}: {entry['n_objects']} true objects "
